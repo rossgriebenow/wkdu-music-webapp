@@ -6,6 +6,27 @@
  <script src="./jquery-3.1.1.min.js"></script>
  <script type="text/javascript">
  
+	function getmsg(){
+			$.ajax({
+				type: "GET",
+				url: "http://localhost:8080/getmsg",
+				contentType: "application/json; charset=utf-8",
+				data: {},
+				dataType: "html",
+				
+				//fill div with response on success
+				success: function(msg){
+					if(msg.length!=""){
+						alert(msg);
+					}
+				},
+				
+				error: function(xhr, ajaxOptions, thrownError){
+					alert(thrownError);
+				}
+			});
+	}
+ 
 	function loadindex(){
 		document.getElementById("viewcatalog").addEventListener("click", getqueries);
 		document.getElementById("submit").addEventListener("click", getsubmitter);

@@ -49,7 +49,7 @@ app.get("/add", function(req,res){
 app.get('/loadindex', function (req, res){
 	if(!req.session.userid){
 		console.log("sending login form")
-		html = 	"<form method=post action='/login' class='login'><input type=\"text\" name=\"username\" class=\"login\" value=\"\"><input type=\"password\" name=\"password\" class=\"login\" value=\"\"><input type=\"submit\" value=\"Login\" class=\"login\">"
+		html = 	"<a href=\"#\" onclick=\"register()\">Create an Account<\a><form method=post action='/login' class='login'><input type=\"text\" name=\"username\" class=\"login\" value=\"\"><input type=\"password\" name=\"password\" class=\"login\" value=\"\"><input type=\"submit\" value=\"Login\" class=\"login\" onclick=\"getmsg()\">"
 		res.send(html);
 	}
 	else{
@@ -75,15 +75,27 @@ app.post('/login', function (req, res){
 			console.log("login successful");
 			req.session.userid = req.body.username;
 			req.session.usertype = db.getpermission(req.body.username)
+			req.session.flash.length=0;
 			return res.redirect('/');
 		}
 		else{
 			console.log("login failed");
-			req.session.msg("login failed");
+			req.session.flash = "incorrect username or password";
 			return res.redirect('/');
 		}
 	});
 	db.login(req.body.username, req.body.password);
+});
+
+app.get('/getmsg', function (req, res){
+	db.once('loggedin', function(msg){
+		if(msg==0){
+			res.send("incorrect username or password");
+		}
+		else{
+			res.send("");
+		}
+	});
 });
 
 app.post('/upload', function (req, res){
