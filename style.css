@@ -49,3 +49,14 @@ h2
 	font-size:18px;
 	font-family:Courier;
 }
+
+input{
+	padding:8px;
+	border: 2px solid gray;
+	font-family:Courier;	
+	font-size: 10px;
+	background-color:white;
+}
+input:hover{
+	background-color: LightGray;
+}
