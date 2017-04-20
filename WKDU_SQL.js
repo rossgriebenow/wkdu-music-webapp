@@ -75,12 +75,10 @@ app.post('/login', function (req, res){
 			console.log("login successful");
 			req.session.userid = req.body.username;
 			req.session.usertype = db.getpermission(req.body.username)
-			req.session.flash.length=0;
 			return res.redirect('/');
 		}
 		else{
 			console.log("login failed");
-			req.session.flash = "incorrect username or password";
 			return res.redirect('/');
 		}
 	});
@@ -100,7 +98,7 @@ app.get('/getmsg', function (req, res){
 
 app.post('/upload', function (req, res){
 	var valid = true;
-	console.log(req.files);
+	//console.log(req.files);
 	
 	if(req.files.file instanceof Array){
 		for(var i in req.files.file){
@@ -135,9 +133,7 @@ app.post('/upload', function (req, res){
 			var isincatalog = false;
 			db.once('isincatalog',function(msg){
 				isincatalog = msg;
-				
-				if(!isincatalog){
-					console.log("wtf");
+				if(isincatalog > 0){
 					sql = "insert into catalog (albumName,artistName,label,submittedBy,submissionStatus,dateSubmitted,mediaType, fileAddress) values (";
 					sql += mysql.escape(album)+", "+mysql.escape(artist)+", "+mysql.escape(label)+", "+mysql.escape(req.session.userid)+", 'Pending', now(), 'Digital', '"+newpath+"');"
 				
@@ -145,9 +141,9 @@ app.post('/upload', function (req, res){
 				
 					res.send("file(s) successfully submitted. Thank you!");
 				}
-			else{
-				res.send("submission is already in catalog");
-			}
+				else{
+					res.send("submission is already in catalog");
+				}
 			});
 		}
 		else{
@@ -174,7 +170,9 @@ app.post('/upload', function (req, res){
 			var album = mdata.album;
 			var label = mdata.publisher;
 			
-			var newpath = "./files/"+artist + "- "+song+".mp3";
+			fs.mkdirSync("./files/"+artist+"-"+album);
+			
+			var newpath = "./files/"+artist + "-"+album+"/"+artist+"-"+song+".mp3";
 			
 			fs.renameSync(path, newpath);
 			
@@ -184,7 +182,7 @@ app.post('/upload', function (req, res){
 			db.once('isincatalog',function(msg){
 				isincatalog = msg;
 				
-				if(!isincatalog){
+				if(isincatalog > 0){
 					sql = "insert into catalog (albumName,artistName,label,submittedBy,submissionStatus,dateSubmitted,mediaType, fileAddress) values (";
 					sql += mysql.escape(album)+", "+mysql.escape(artist)+", "+mysql.escape(label)+", "+mysql.escape(req.session.userid)+", 'Pending', now(), 'Digital', '"+newpath+"');"
 				
