@@ -1,0 +1,249 @@
+<html>
+<head>
+<link rel = "stylesheet" type = "text/css" href = "style.css" />
+ <title>WKDU Catalog - Homepage</title>
+ 
+ <script src="./jquery-3.1.1.min.js"></script>
+ <script type="text/javascript">
+ 
+	function loadindex(){
+		document.getElementById("viewcatalog").addEventListener("click", getqueries);
+		document.getElementById("submit").addEventListener("click", getsubmitter);
+	
+	
+		var url = "http://localhost:8080/loadindex"
+		
+				$.ajax({
+				type: "GET",
+				url: url,
+				contentType: "application/json; charset=utf-8",
+				data: {},
+				dataType: "html",
+				
+				//fill div with response on success
+				success: function(msg){
+					document.getElementById("login").innerHTML = msg;
+				},
+				
+				error: function(xhr, ajaxOptions, thrownError){
+					alert(thrownError);
+					document.getElementById("login").innerHTML = "login request failed"
+				}
+			});
+	}
+	function logout(){
+		var url = "http://localhost:8080/logout"
+			$.ajax({
+				type: "GET",
+				url: url,
+				contentType: "application/json; charset=utf-8",
+				data: {},
+				dataType: "html",
+				
+				//fill div with response on success
+				success: function(msg){
+					loadindex()
+				},
+				
+				error: function(xhr, ajaxOptions, thrownError){
+					alert(thrownError);
+					document.getElementById("login").innerHTML = "logout request failed"
+				}
+			});
+	}
+	function getqueries(){
+		var url = "http://localhost:8080/catalog"
+		$.ajax({
+			type: "GET",
+			url: url,
+			contentType: "application/json; charset=utf-8",
+			data: {},
+			datatype: "html",
+			
+			success: function(msg){
+				document.getElementById("content").innerHTML = msg;
+				
+				document.getElementById("history").addEventListener("click", gethistory);
+				document.getElementById("newadds").addEventListener("click", getadds);
+			},
+			error: function(xhr, ajaxOptions, thrownError){
+				alert(thrownError);
+			}
+		});
+		
+	}
+	
+	function getsubmitter(){
+		var url = "http://localhost:8080/submitter"
+		$.ajax({
+			type: "GET",
+			url: url,
+			contentType: "application/json; charset=utf-8",
+			data: {},
+			datatype: "html",
+			
+			success: function(msg){
+				document.getElementById("content").innerHTML = msg;
+				
+				//document.getElementById("history").addEventListener("click", gethistory);
+				//document.getElementById("newadds").addEventListener("click", getadds);
+			},
+			error: function(xhr, ajaxOptions, thrownError){
+				alert(thrownError);
+			}
+		});
+	}
+	
+	function gethistory(){
+		var url = "http://localhost:8080/history"
+		
+		$.ajax({
+			type: "GET",
+			url: url,
+			contentType: "application/json; charset=utf-8",
+			data: {},
+			datatype: "html",
+			
+			success: function(msg){
+				document.getElementById("content").innerHTML = msg;
+			},
+			error: function(xhr, ajaxOptions, thrownError){
+				alert(thrownError);
+			}
+		});
+	}
+	function getadds(){
+		var url = "http://localhost:8080/adds"
+		
+		$.ajax({
+			type: "GET",
+			url: url,
+			contentType: "application/json; charset=utf-8",
+			data: {},
+			datatype: "html",
+			
+			success: function(msg){
+				document.getElementById("content").innerHTML = msg;
+			},
+			error: function(xhr, ajaxOptions, thrownError){
+				alert(thrownError);
+			}
+		});
+	}
+	
+		function addToCatalog() {
+		var formFilled = true;
+		//use jQuery to make sure fields are filled out
+		$(":text").each(function() {
+			if($(this).val() === "")
+				formFilled = false;
+		});
+		
+		if (formFilled) {
+			//generate URL from form
+			var URL = "http://localhost:8080/add?";
+			//URL = URL + "user=" + document.getElementById("user").value;
+			
+			var d = new Date();
+			URL = URL + "&submitDate=";
+			URL = URL + d.getFullYear() + "-";
+			//we might have to add leading zeroes to month and day. that's annoying.
+			var month = d.getMonth() + 1;
+			var monthstr;
+			if (month < 10) {
+				monthstr = "0" + month.toString();
+			}
+			else {
+				monthstr = month.toString();
+			}
+			
+			URL = URL + monthstr + "-";
+			
+			var day = d.getDate();
+			var daystr;
+			if (day < 10) {
+				daystr = "0" + day.toString();
+			}
+			else {
+				daystr = day.toString();
+			}
+			
+			URL = URL + daystr;
+			
+			URL = URL + "&album=" + document.getElementById("album").value;
+			URL = URL + "&artist=" + document.getElementById("artist").value;
+			URL = URL + "&label=" + document.getElementById("label").value;
+			URL = URL + "&mediaType=" + document.getElementById("mediaType").value;
+			
+			//alert(URL);
+			$.ajax({
+				type: "GET",
+				url: URL,
+				success: function(msg) {
+					alert(String(msg));
+				},
+				error: function(jgXHR, textStatus, errorThrown) {
+					alert(URL + " not working");
+				}
+			})
+			
+		}
+		else {
+			alert("One or more form elements not filled out.");
+		}
+	
+	}
+	
+ </script>
+</head>
+<body onload="loadindex()">
+
+	<div class="login" id="login"></div>
+
+	<div class="header">
+	<img src="wkdu.jpg" alt="WKDU Logo" />
+	<h1>Music Department: Catalog Homepage</h1>
+</div>
+
+<div class="space"></div>
+
+<div id="links" class="links">
+	<a href="index.html">Home</a><br><br>
+	<a href="#">View Playlists</a><br><br>
+	<a href="#">New Playlist</a><br><br>
+	<a href="#" id="viewcatalog">View Catalog</a><br><br>
+	<a href="#" id="submit">Submit</a><br><br>
+	<a href="#">View Submission History</a><br><br>
+	<a href="http://www.wkdu.org">wkdu.org</a>
+</div>
+
+
+<div id="content" class="content">
+	<h2>Top 5 Adds This Week</h2>
+	<div id="top5">
+		<ol>
+			<li>Ty Segall- "Ty Segall"(2017)</li>
+			<li>Devendra Banhart- "An Ape in Pink Marble"</li>
+			<li>The Spirit of the Beehive- "Pleasure Suck"</li>
+			<li>Mount Eerie- "A Crow Looked at Me"</li>
+			<li>Sampha- "Process"</li>
+		</ol>
+	</div>
+
+	<br><br>
+
+	<h2>Top 30 Heavy Rotation This Week</h2>
+	<div id="top30">
+		<ol>
+			<li>This</li>
+			<li>is</li>
+			<li>a</li>
+			<li>temporary</li>
+			<li>placeholder</li>
+		</ol>
+	</div>
+</div>
+
+
+</body>
+</html>
