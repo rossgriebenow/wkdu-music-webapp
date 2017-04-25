@@ -6,8 +6,8 @@ var fs = require('fs');
 var con = mysql.createConnection({
 	host: 'localhost',
 	user: 'ross',
-	password: '****',
-	database: '****'
+	password: 'Lifehou$3',
+	database: 'wkdudev1'
 });
 
 
@@ -36,10 +36,11 @@ database.prototype.isincatalog=function(sql){
 	var self = this;
 	
 	con.query(sql, function(err,rows,fields){
-		console.log(rows);
-		console.log(rows.length);
+		console.log(JSON.stringify(rows));
+		//console.log(JSON.parse(JSON.stringify(rows[0]["count(*)"])));
+		//console.log(rows[0]["count(*)"]);
 		
-		if(rows.length > 0){
+		if(rows[0]["count(*)"] > 0){
 			self.emit('isincatalog', true);
 		}
 		else{

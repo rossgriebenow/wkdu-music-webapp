@@ -98,7 +98,6 @@ app.get('/getmsg', function (req, res){
 
 app.post('/upload', function (req, res){
 	var valid = true;
-	//console.log(req.files);
 	
 	if(req.files.file instanceof Array){
 		for(var i in req.files.file){
@@ -120,20 +119,28 @@ app.post('/upload', function (req, res){
 				var song = mdata.title;
 				var album = mdata.album;
 				var label = mdata.publisher;
-			
-				var newpath = "./files/"+artist + "- "+song+".mp3";
-			
-				fs.renameSync(path, newpath);
+				
+				artist = artist.replace(/[&\/\\#,^+()~%.'":*<>{}\[\]]/g, '');
+				album = album.replace(/[&\/\\#,^+()~%.'":*<>{}\[\]]/g, '');
+				song = song.replace(/[&\/\\#,^+()~%.'":*<>{}\[\]]/g, '');
 			}
 		}
 		
-		if(valid){			
+		if(valid){	
+			
 			var sql = "select * from catalog where artistName="+mysql.escape(artist)+" && albumName = "+mysql.escape(album)+";";
 			db.isincatalog(sql);
-			var isincatalog = false;
+			var isincatalog;
 			db.once('isincatalog',function(msg){
 				isincatalog = msg;
-				if(isincatalog > 0){
+				if(isincatalog == false){
+					var newpath = "./files/"+artist + "- "+song+".mp3";
+					fs.renameSync(path, newpath);
+					var filepath = path.substring(0,path.lastIndexOf("\\"));
+					fs.rmdirSync(filepath);
+					filepath = filepath.substring(0,filepath.lastIndexOf("\\"));
+					fs.rmdirSync(filepath);
+			
 					sql = "insert into catalog (albumName,artistName,label,submittedBy,submissionStatus,dateSubmitted,mediaType, fileAddress) values (";
 					sql += mysql.escape(album)+", "+mysql.escape(artist)+", "+mysql.escape(label)+", "+mysql.escape(req.session.userid)+", 'Pending', now(), 'Digital', '"+newpath+"');"
 				
@@ -159,6 +166,11 @@ app.post('/upload', function (req, res){
 		
 		if(type != "audio/mp3"){
 			fs.unlinkSync(path);
+			var filepath = path.substring(0,path.lastIndexOf("\\"));
+			fs.rmdirSync(filepath);
+			filepath = filepath.substring(0,filepath.lastIndexOf("\\"));
+			fs.rmdirSync(filepath);
+			
 			res.send("Only mp3 files can be uploaded.");
 		}
 		else{
@@ -170,27 +182,41 @@ app.post('/upload', function (req, res){
 			var album = mdata.album;
 			var label = mdata.publisher;
 			
-			fs.mkdirSync("./files/"+artist+"-"+album);
-			
-			var newpath = "./files/"+artist + "-"+album+"/"+artist+"-"+song+".mp3";
-			
-			fs.renameSync(path, newpath);
+			artist = artist.replace(/[&\/\\#,^+()~%.'":*<>{}\[\]]/g, '');
+			album = album.replace(/[&\/\\#,^+()~%.'":*<>{}\[\]]/g, '');
+			song = song.replace(/[&\/\\#,^+()~%.'":*<>{}\[\]]/g, '');
 			
 			var sql = "select count(*) from catalog where artistName="+mysql.escape(artist)+" && albumName = "+mysql.escape(album)+";";
 			db.isincatalog(sql);
-			var isincatalog = false;
+			var isincatalog;
 			db.once('isincatalog',function(msg){
 				isincatalog = msg;
 				
-				if(isincatalog > 0){
+				if(isincatalog == false){
+					fs.mkdirSync("./files/"+artist+"-"+album);
+					var newpath = "./files/"+artist + "-"+album+"/"+artist+"-"+song+".mp3";
+					fs.renameSync(path, newpath);
+			
 					sql = "insert into catalog (albumName,artistName,label,submittedBy,submissionStatus,dateSubmitted,mediaType, fileAddress) values (";
 					sql += mysql.escape(album)+", "+mysql.escape(artist)+", "+mysql.escape(label)+", "+mysql.escape(req.session.userid)+", 'Pending', now(), 'Digital', '"+newpath+"');"
 				
 					db.add(sql);
 				
+					var filepath = path.substring(0,path.lastIndexOf("\\"));
+					fs.rmdirSync(filepath);
+					filepath = filepath.substring(0,filepath.lastIndexOf("\\"));
+					fs.rmdirSync(filepath);
+				
 					res.send("file(s) successfully submitted. Thank you!");
 				}
 			else{
+				fs.unlinkSync(path);
+				
+				var filepath = path.substring(0,path.lastIndexOf("\\"));
+				fs.rmdirSync(filepath);
+				filepath = filepath.substring(0,filepath.lastIndexOf("\\"));
+				fs.rmdirSync(filepath);
+				
 				res.send("submission is already in catalog");
 			}
 			});
