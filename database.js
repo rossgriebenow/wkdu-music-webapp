@@ -100,6 +100,48 @@ database.prototype.search=function(sql){
 	});
 };
 
+database.prototype.searchcat=function(sql){
+	var self = this;
+
+	con.query(sql,function(err,rows,fields){
+			if(err){
+				console.log(err);
+			}
+			else{
+				var html = "<table id=\"table\" border=\"1\"><tr>";
+				for(var i=0; i < fields.length; i++){
+					html += "<th>";
+					html += fields[i].name;
+					html += "</th>";
+				}
+				html += "</tr>";
+				
+				for (var i = 0; i < rows.length; i++){
+					html+="<tr>";
+					html+="<td>"
+					html+=rows[i].albumName;
+					html+="</td>"
+					html+="<td>"
+					html+=rows[i].artistName;
+					html+="</td>"
+					html+="<td>"
+					html+=rows[i].label;
+					html+="</td>"
+					html+="<td>"
+					html+=rows[i].dateAdded;
+					html+="</td>"
+					html+="<td>"
+					html+=rows[i].mediaType;
+					html+="</td>"
+					html += "</tr>"
+				}
+				html+="</table>";
+			}
+			//console.log(html);
+			self.emit('found',html);
+	});
+};
+
 database.prototype.adds=function(sql){
 	var self = this;
 

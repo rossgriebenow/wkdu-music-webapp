@@ -49,7 +49,7 @@ app.get("/add", function(req,res){
 app.get('/loadindex', function (req, res){
 	if(!req.session.userid){
 		console.log("sending login form")
-		html = 	"<a href=\"#\" onclick=\"register()\">Create an Account<\a><form method=post action='/login' class='login'><input type=\"text\" name=\"username\" class=\"login\" value=\"\"><input type=\"password\" name=\"password\" class=\"login\" value=\"\"><input type=\"submit\" value=\"Login\" class=\"login\" onclick=\"getmsg()\">"
+		html = 	"<a href=\"#\" onclick=\"register()\">Create an Account<\a><form method=post action='/login' class='login'><input type=\"text\" name=\"username\" placeholder=\"username\" class=\"login\" value=\"\"><input type=\"password\" name=\"password\" placeholder=\"password\" class=\"login\" value=\"\"><input type=\"submit\" value=\"Login\" class=\"login\" onclick=\"getmsg()\">"
 		res.send(html);
 	}
 	else{
@@ -226,15 +226,23 @@ app.post('/upload', function (req, res){
 
 app.get('/catalog', function (req,res){
 	if(req.session.userid){
-		if(req.session.usertype != 'pending'){
+		if(req.session.usertype == 'submitter'){
 			var html = "<a href=\"#\" id=\"history\">View my past submissions</a><br><br>";
 			html += "<a href=\"#\" id=\"newadds\">View new adds for this week</a><br><br>";
 			
 			res.send(html);
 		}
-		else{
+		else if(req.session.usertype == 'pending'){
 		var html = "you don't have permission to view the catalog.";
 		res.send(html);
+		}
+		else{
+			var html = "<a href=\"#\" id=\"history\">View my past submissions</a><br><br>";
+			html += "<a href=\"#\" id=\"newadds\">View new adds for this week</a><br><br>";
+			html += "<a href=\"#\" id=\"shelves\">View new music shelves</a><br><br>";
+			html += "<a href=\"#\" id=\"search\">Search entire catalog</a><br><br>";
+			
+			res.send(html);
 		}
 	}
 	else{
@@ -246,7 +254,7 @@ app.get('/catalog', function (req,res){
 app.get('/submitter', function(req,res){
 		if(req.session.userid){
 		if(req.session.usertype != 'pending'){
-			var html = "<h1>Add to catalog</h1><hr><p>Please provide all information below if mailing physical media:</p><form name=\"pendingSubmission\"><p>Album name: <input type=\"text\" name=\"album\" id=\"album\"></p><p>Artist: <input type=\"text\" name=\"artist\" id=\"artist\"></p><p>Record label: <input type=\"text\" name=\"label\" id=\"label\"></p><p>Media type:<select id=\"mediaType\"><option value=\"Digital\">Digital</option><option value=\"CD\">CD</option><option value=\"12in\">12in</option><option value=\"10in\">10in</option><option value=\"7in\">7in</option></select></p><p><button type=\"button\" onclick=\"addToCatalog()\">Submit!</button></p></form><p>Or upload mp3 file(s):</p><form name=\"fileUpload\" action=\"/upload\" method=\"post\" enctype=\"multipart/form-data\"><p><input name=\"file\" type=\"file\" id=\"file\" multiple></p><p><input type=\"submit\" value=\"Submit File\"></p></form>"
+			var html = "<h1>Add to catalog</h1><hr><p>Please provide all information below if mailing physical media:</p><form name=\"pendingSubmission\"><p>Album name: <input type=\"text\" name=\"album\" id=\"album\"></p><p>Artist: <input type=\"text\" name=\"artist\" id=\"artist\"></p><p>Record label: <input type=\"text\" name=\"label\" id=\"label\"></p><p>Media type:<select id=\"mediaType\"><option value=\"CD\">CD</option><option value=\"12in\">12in</option><option value=\"10in\">10in</option><option value=\"7in\">7in</option></select></p><p><button type=\"button\" onclick=\"addToCatalog()\">Submit!</button></p></form><p>Or upload mp3 file(s):</p><form name=\"fileUpload\" action=\"/upload\" method=\"post\" enctype=\"multipart/form-data\"><p><input name=\"file\" type=\"file\" id=\"file\" multiple></p><p><input type=\"submit\" value=\"Submit File\"></p></form>"
 			
 			res.send(html);
 		}
@@ -267,7 +275,50 @@ app.get('/history', function (req,res){
 			var sql = "select albumName, artistName, label, spinsAllTime, spinsWeek, submissionStatus, dateSubmitted, mediaType from catalog where submittedBy='"+req.session.userid+"' order by dateSubmitted desc;";
 			db.search(sql);
 			db.once('found',function(msg){
-				console.log(msg);
+				//console.log(msg);
+				res.send(msg);
+			});
+		}
+		else{
+		var html = "you don't have permission to view the catalog.";
+		res.send(html);
+		}
+	}
+	else{
+		var html = "you don't have permission to view the catalog.";
+		res.send(html);
+	}
+});
+
+app.get('/shelves', function(req,res){
+		if(req.session.userid){
+		if(req.session.usertype != 'pending'){
+			var date;
+			var sql = "select albumName, artistName, label, spinsAllTime, spinsWeek, dateSubmitted, mediaType from catalog where dateAdded > DATE_SUB(curdate(), INTERVAL 12 WEEK) and submissionStatus='Approved' order by dateSubmitted desc;";
+			db.adds(sql);
+			db.once('found',function(msg){
+				//console.log(msg);
+				res.send(msg);
+			});
+		}
+		else{
+		var html = "you don't have permission to view the catalog.";
+		res.send(html);
+		}
+	}
+	else{
+		var html = "you don't have permission to view the catalog.";
+		res.send(html);
+	}
+});
+
+app.get('/userquery', function (req,res){
+	if(req.session.userid){
+		if(req.session.usertype != 'pending'){
+			var sql = "select albumName, artistName, label, spinsAllTime, spinsWeek, submissionStatus, dateSubmitted, mediaType from catalog where submittedBy='"+req.session.userid+"' order by dateSubmitted desc;";
+			db.search(sql);
+			db.once('found',function(msg){
+				//console.log(msg);
 				res.send(msg);
 			});
 		}
@@ -286,10 +337,10 @@ app.get('/adds', function(req,res){
 		if(req.session.userid){
 		if(req.session.usertype != 'pending'){
 			var date;
-			var sql = "select albumName, artistName, label, spinsAllTime, spinsWeek, dateSubmitted, mediaType from catalog where dateAdded > DATE_SUB(curdate(), INTERVAL 4 WEEK) and submissionStatus='Approved' order by dateSubmitted desc;";
+			var sql = "select albumName, artistName, label, spinsAllTime, spinsWeek, dateSubmitted, mediaType from catalog where dateAdded > DATE_SUB(curdate(), INTERVAL 1 WEEK) and submissionStatus='Approved' order by dateSubmitted desc;";
 			db.adds(sql);
 			db.once('found',function(msg){
-				console.log(msg);
+				//console.log(msg);
 				res.send(msg);
 			});
 		}
@@ -300,6 +351,54 @@ app.get('/adds', function(req,res){
 	}
 	else{
 		var html = "you don't have permission to view the catalog.";
+		res.send(html);
+	}
+});
+
+app.get('/search', function(req,res){
+	if(req.session.userid){
+		if(req.session.usertype != 'pending' && req.session.usertype != 'submitter'){
+			var sql = "select albumName, artistName, label, dateAdded, mediaType from catalog where submissionStatus='Approved'";
+				if(req.query.artist.length > 0){
+					sql += "and artistName='";
+					sql += req.query.artist;
+					sql += "'";
+				}
+				if(req.query.album.length > 0){
+					sql += "and albumName='";
+					sql += req.query.album;
+					sql += "'";
+				}
+				if(req.query.label.length > 0){
+					sql += "and label='";
+					sql += req.query.label;
+					sql += "'";
+				}
+				if(req.query.year.length > 0){
+					var year = parseInt(req.query.year);
+					if(year > 1900 && year < 2100){
+						sql += "and dateAdded >= '";
+						sql += req.query.year;
+						sql += "-01-01' and dateAdded <= '";
+						sql += req.query.year;
+						sql += "-12-31'";
+					}
+				}
+
+			sql+=" order by artistName desc;";
+			console.log(sql);
+			db.searchcat(sql);
+			db.once('found',function(msg){
+				res.send(msg);
+			});
+		}
+		else{
+		var html = "you don't have permission to search the catalog.";
+		res.send(html);
+		}
+	}
+	else{
+		var html = "you don't have permission to search the catalog.";
 		res.send(html);
 	}
 });
