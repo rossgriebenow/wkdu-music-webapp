@@ -36,6 +36,8 @@ database.prototype.isincatalog=function(sql){
 	var self = this;
 	
 	con.query(sql, function(err,rows,fields){
+		console.log("fields: "+fields);
+		console.log("rows: "+rows);
 		console.log(JSON.stringify(rows));
 		//console.log(JSON.parse(JSON.stringify(rows[0]["count(*)"])));
 		//console.log(rows[0]["count(*)"]);
@@ -190,6 +192,48 @@ database.prototype.adds=function(sql){
 	});
 };
 
+database.prototype.pending=function(){
+	var self = this;
+	var query = "select albumName, artistName, label, fileAddress from catalog where mediaType='Digital' and submissionStatus='Pending' and dateSubmitted > DATE_SUB(curdate(), INTERVAL 2 WEEK);";
+	con.query(query,function(err, rows, fields){
+		if(err){
+			console.log(err);
+			var html = "<div id=\"content\" class=\"content\">"
+			html += err;
+			html += "</div>"
+			self.emit('found',hmtl);
+		}
+		else{
+			var html = "<div id=\"content\" class=\"content\"><table id=\"table\" border=\"1\"><tr>";
+			for(var i=0; i < fields.length; i++){
+				html += "<th>";
+				html += fields[i].name;
+				html += "</th>";
+			}
+			html += "</tr>";
+			for (var i = 0; i < rows.length; i++){
+				html+="<tr>";
+				html+="<td>"
+				html+=rows[i].albumName;
+				html+="</td>"
+				html+="<td>"
+				html+=rows[i].artistName;
+				html+="</td>"
+				html+="<td>"
+				html+=rows[i].label;
+				html+="</td>"
+				html+="<td>"
+				html+=rows[i].fileAddress;
+				html+="</td>"
+				html += "</tr>"
+				}
+			html+="</table></div>";
+			
+			self.emit('found',html);
+		}
+	});
+};
+
 database.prototype.login=function(username,password){
 	var str = 'SELECT * FROM users WHERE username=\''+username+'\' AND password=PASSWORD(\''+ password+'\')';
 	var self = this;
@@ -205,8 +249,7 @@ database.prototype.login=function(username,password){
 		else
 			self.emit('loggedin',0);
 		}
-	}
-	);
+	});
 };
 
 database.prototype.getpermission=function(username){
@@ -216,11 +259,13 @@ database.prototype.getpermission=function(username){
 	function(err, rows, fields){
 		if(err){
 			 console.log('Error getting user permissions');
-			return 0;
+			//return 0;
+			self.emit('permission',"pending");
 		}
 		else{
-			console.log(rows[0].type);
-			return rows[0];
+			//console.log(rows[0].type);
+			//return rows[0];
+			self.emit('permission',rows[0].type);
 		}
 	}
 	);

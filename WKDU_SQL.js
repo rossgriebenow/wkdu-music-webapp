@@ -74,14 +74,21 @@ app.post('/login', function (req, res){
 		if(msg==1){
 			console.log("login successful");
 			req.session.userid = req.body.username;
-			req.session.usertype = db.getpermission(req.body.username)
-			return res.redirect('/');
+			//req.session.usertype = db.getpermission(req.body.username)
+			db.getpermission(req.body.username);
 		}
 		else{
 			console.log("login failed");
 			return res.redirect('/');
 		}
 	});
+	
+	db.once('permission',function(msg){
+		req.session.usertype = msg;
+		console.log(req.session.usertype);
+		return res.redirect('/');
+	});
+	
 	db.login(req.body.username, req.body.password);
 });
 
@@ -96,67 +103,112 @@ app.get('/getmsg', function (req, res){
 	});
 });
 
+function arrayupload(json){
+	for(var i in json){
+			var path = json[i].file;
+			var type = json[i].mimetype;
+			var mdata = id3.read(path);
+			console.log(mdata);
+				
+			var artist = mdata.artist;
+			var song = mdata.title;
+			var album = mdata.album;
+			var label = mdata.publisher;
+			var newpath;
+			
+			if(artist.length > 40){
+				artist = artist.slice(0,40);
+			}
+			if(album.length > 40){
+				album = album.slice(0,40);
+			}
+			
+			artist = artist.replace(/[&\/\\#,^+()~%.'":*<>{}\[\]]/g, '');
+			album = album.replace(/[&\/\\#,^+()~%.'":*<>{}\[\]]/g, '');
+			song = song.replace(/[&\/\\#,^+()~%.'":*<>{}\[\]]/g, '');
+			
+			if(i==0){
+				newpath = "./files/"+artist + "-"+album+"/"+artist+"-"+song+".mp3";
+			}
+			
+			fs.renameSync(path, newpath);
+			
+			var filepath = path.substring(0,path.lastIndexOf("\\"));
+			fs.rmdirSync(filepath);
+			filepath = filepath.substring(0,filepath.lastIndexOf("\\"));
+			fs.rmdirSync(filepath);
+	}
+}
+
 app.post('/upload', function (req, res){
 	var valid = true;
 	
 	if(req.files.file instanceof Array){
-		for(var i in req.files.file){
-			var path = req.files.file[i].file;
-			var type = req.files.file[i].mimetype;
+		//for(var i in req.files.file){
+			var path = req.files.file[0].file;
+			var type = req.files.file[0].mimetype;
 			
 			console.log(path);
 			console.log(type);
 			
 			if(type != "audio/mp3"){
-				valid = false;
 				fs.unlinkSync(path);
+				res.send("only mp3 files can be uploaded.");
 			}
-			else{
-				var mdata = id3.read(path);
-				console.log(mdata);
-				
-				var artist = mdata.artist;
-				var song = mdata.title;
-				var album = mdata.album;
-				var label = mdata.publisher;
-				
-				artist = artist.replace(/[&\/\\#,^+()~%.'":*<>{}\[\]]/g, '');
-				album = album.replace(/[&\/\\#,^+()~%.'":*<>{}\[\]]/g, '');
-				song = song.replace(/[&\/\\#,^+()~%.'":*<>{}\[\]]/g, '');
+			
+			var mdata = id3.read(path);
+
+			var artist = mdata.artist;
+			var song = mdata.title;
+			var album = mdata.album;
+			var label = mdata.publisher;
+			var newpath;
+			
+			if(artist.length > 40){
+				artist = artist.slice(0,40);
 			}
-		}
-		
-		if(valid){	
-			
-			var sql = "select * from catalog where artistName="+mysql.escape(artist)+" && albumName = "+mysql.escape(album)+";";
-			db.isincatalog(sql);
-			var isincatalog;
-			db.once('isincatalog',function(msg){
-				isincatalog = msg;
-				if(isincatalog == false){
-					var newpath = "./files/"+artist + "- "+song+".mp3";
-					fs.renameSync(path, newpath);
-					var filepath = path.substring(0,path.lastIndexOf("\\"));
-					fs.rmdirSync(filepath);
-					filepath = filepath.substring(0,filepath.lastIndexOf("\\"));
-					fs.rmdirSync(filepath);
-			
-					sql = "insert into catalog (albumName,artistName,label,submittedBy,submissionStatus,dateSubmitted,mediaType, fileAddress) values (";
-					sql += mysql.escape(album)+", "+mysql.escape(artist)+", "+mysql.escape(label)+", "+mysql.escape(req.session.userid)+", 'Pending', now(), 'Digital', '"+newpath+"');"
+			if(album.length > 40){
+				album = album.slice(0,40);
+			}
 				
-					db.add(sql);
+			artist = artist.replace(/[&\/\\#,^+()~%.'":*<>{}\[\]]/g, '');
+			album = album.replace(/[&\/\\#,^+()~%.'":*<>{}\[\]]/g, '');
+			song = song.replace(/[&\/\\#,^+()~%.'":*<>{}\[\]]/g, '');
+			
+			//if(i == 0){
+				var sql = "select count(*) from catalog where artistName="+mysql.escape(artist)+" && albumName = "+mysql.escape(album)+";";
+				var isincatalog;
+				db.isincatalog(sql);
+				db.once('isincatalog',function(msg){
+					isincatalog = msg;
+					if(isincatalog){
+						fs.unlinkSync(path);
 				
-					res.send("file(s) successfully submitted. Thank you!");
-				}
-				else{
-					res.send("submission is already in catalog");
-				}
-			});
-		}
-		else{
-			res.send("Only mp3 files can be uploaded.");
-		}
+						var filepath = path.substring(0,path.lastIndexOf("\\"));
+						fs.rmdirSync(filepath);
+						filepath = filepath.substring(0,filepath.lastIndexOf("\\"));
+						fs.rmdirSync(filepath);
+					
+						res.send("submission is already in catalog");
+					}
+					else{
+						var newdir = "./files/"+artist+"-"+album;
+						fs.mkdirSync(newdir);
+			
+						sql = "insert into catalog (albumName,artistName,label,submittedBy,submissionStatus,dateSubmitted,mediaType, fileAddress) values (";
+						sql += mysql.escape(album)+", "+mysql.escape(artist)+", "+mysql.escape(label)+", "+mysql.escape(req.session.userid)+", 'Pending', now(), 'Digital', '"+newdir+"');"
+				
+						db.add(sql);
+						
+						arrayupload(req.files.file);
+						
+						res.send("files submitted successfully. Thank you!");
+					}
+				});
+			//}
+		//}
 	}
+	
 	else{
 		var path = req.files.file.file;
 		var type = req.files.file.mimetype;
@@ -182,6 +234,13 @@ app.post('/upload', function (req, res){
 			var album = mdata.album;
 			var label = mdata.publisher;
 			
+			if(artist.length > 40){
+				artist = artist.slice(0,40);
+			}
+			if(album.length > 40){
+				album = album.slice(0,40);
+			}
+			
 			artist = artist.replace(/[&\/\\#,^+()~%.'":*<>{}\[\]]/g, '');
 			album = album.replace(/[&\/\\#,^+()~%.'":*<>{}\[\]]/g, '');
 			song = song.replace(/[&\/\\#,^+()~%.'":*<>{}\[\]]/g, '');
@@ -191,14 +250,14 @@ app.post('/upload', function (req, res){
 			var isincatalog;
 			db.once('isincatalog',function(msg){
 				isincatalog = msg;
-				
+				console.log("isintcatalog: "+isincatalog);
 				if(isincatalog == false){
 					fs.mkdirSync("./files/"+artist+"-"+album);
 					var newpath = "./files/"+artist + "-"+album+"/"+artist+"-"+song+".mp3";
 					fs.renameSync(path, newpath);
 			
 					sql = "insert into catalog (albumName,artistName,label,submittedBy,submissionStatus,dateSubmitted,mediaType, fileAddress) values (";
-					sql += mysql.escape(album)+", "+mysql.escape(artist)+", "+mysql.escape(label)+", "+mysql.escape(req.session.userid)+", 'Pending', now(), 'Digital', '"+newpath+"');"
+					sql += mysql.escape(album)+", "+mysql.escape(artist)+", "+mysql.escape(label)+", "+mysql.escape(req.session.userid)+", 'Pending', now(), 'Digital', '"+"./files/"+artist + "-"+album+"');"
 				
 					db.add(sql);
 				
@@ -209,16 +268,16 @@ app.post('/upload', function (req, res){
 				
 					res.send("file(s) successfully submitted. Thank you!");
 				}
-			else{
-				fs.unlinkSync(path);
-				
-				var filepath = path.substring(0,path.lastIndexOf("\\"));
-				fs.rmdirSync(filepath);
-				filepath = filepath.substring(0,filepath.lastIndexOf("\\"));
-				fs.rmdirSync(filepath);
-				
-				res.send("submission is already in catalog");
-			}
+				else{
+					fs.unlinkSync(path);
+					
+					var filepath = path.substring(0,path.lastIndexOf("\\"));
+					fs.rmdirSync(filepath);
+					filepath = filepath.substring(0,path.lastIndexOf("\\"));
+					fs.rmdirSync(filepath);
+					
+					res.send("submission is already in catalog");
+				}
 			});
 		}
 	}
@@ -399,6 +458,20 @@ app.get('/search', function(req,res){
 	}
 	else{
 		var html = "you don't have permission to search the catalog.";
+		res.send(html);
+	}
+});
+
+app.get('/submissionbrowser', function(req,res){
+	console.log(req.session.usertype);
+	if(req.session.usertype == 'member' || req.session.usertype == 'admin' || req.session.usertype == 'superadmin'){
+		db.pending();
+		db.once('found', function(msg){
+			res.send(msg);
+		});
+	}
+	else{
+		var html = "<div id=\"content\" class=\"content\">you don't have permission to browse submissions.</div>";
 		res.send(html);
 	}
 });
