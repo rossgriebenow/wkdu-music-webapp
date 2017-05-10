@@ -417,7 +417,7 @@ app.get('/adds', function(req,res){
 app.get('/search', function(req,res){
 	if(req.session.userid){
 		if(req.session.usertype != 'pending' && req.session.usertype != 'submitter'){
-			var sql = "select albumName, artistName, label, dateAdded, mediaType from catalog where submissionStatus='Approved'";
+			var sql = "select albumName, artistName, label, dateAdded, mediaType, fileAddress from catalog where submissionStatus='Approved'";
 				if(req.query.artist.length > 0){
 					sql += "and artistName='";
 					sql += req.query.artist;
@@ -473,6 +473,30 @@ app.get('/submissionbrowser', function(req,res){
 	else{
 		var html = "<div id=\"content\" class=\"content\">you don't have permission to browse submissions.</div>";
 		res.send(html);
+	}
+});
+
+app.get('/getfiles', function(req, res){
+	if(req.session.usertype == 'member' || req.session.usertype == 'admin' || req.session.usertype == 'superadmin'){
+		var files = fs.readdirSync(req.query.address);
+		var html="";
+		console.log(files);
+		for(var i = 0; i < files.length; i++){
+			html+="<a href='http://localhost:8080/download?file="+req.query.address+"/"+files[i]+"'>"+files[i]+"</a><br>"
+		}
+		res.send(html);
+	}
+	else{
+		res.redirect('http://localhost:8080');
+	}
+});
+
+app.get('/download', function(req,res){
+	if(req.session.usertype == 'member' || req.session.usertype == 'admin' || req.session.usertype == 'superadmin'){
+		res.download(req.query.file);
+	}
+	else{
+		res.redirect('http://localhost:8080');
 	}
 });
 

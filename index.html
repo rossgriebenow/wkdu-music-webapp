@@ -5,6 +5,9 @@
  
  <script src="./jquery-3.1.1.min.js"></script>
  <script type="text/javascript">
+	function download(evt){
+		//alert(evt.target.getAttribute("value"));
+	}
  
 	function getmsg(){
 			$.ajax({
@@ -30,6 +33,7 @@
 	function loadindex(){
 		document.getElementById("viewcatalog").addEventListener("click", getqueries);
 		document.getElementById("submit").addEventListener("click", getsubmitter);
+		document.getElementById("viewsub").addEventListener("click", submissionbrowser);
 	
 	
 		var url = "http://localhost:8080/loadindex"
@@ -126,6 +130,33 @@
 		var str ="<div id=\"content\" class=\"content\"><form action=\"javascript:void(0);\">leave fields blank to omit from search:<br><input type=\'text\' name=\'artist\' id=\'artistq\' placeholder=\'artist\'><br><input type=\'text\' name=\'album\' id=\'albumq\' placeholder=\'album\'><br><input type=\'text\' name=\'label\' id=\'labelq\' placeholder=\'label\'><br><input type=\'text\' name=\'year\' id=\'yearq\' placeholder=\'year\'><br><input type=\"submit\" value=\"Search\" onclick=\"makeuserquery()\"></form><div id=\"response\"></div></div>"
 		var html = $.parseHTML(str);
 		$("#content").replaceWith(html);
+	}
+	
+	function submissionbrowser(){
+		$.ajax({
+			type: "GET",
+			url: "http://localhost:8080/submissionbrowser",
+			contentType: "application/json; charset=utf-8",
+			data: {},
+			datatype: "html",
+			
+			success: function(msg){
+				var html = $.parseHTML(msg);
+				$("#content").replaceWith(html);
+				var table = document.getElementsByTagName('td');
+				for(var i = 0; i < table.length; i++){
+					if(table[i].innerHTML.includes("</a>")){
+						//alert(i);
+						var ext = table[i].firstChild.getAttribute("value");
+						var id = table[i].firstChild.getAttribute("id");
+						document.getElementById(id).addEventListener("click", download, false);
+					}
+				}
+			},
+			error: function(xhr, ajaxOptions, thrownError){
+				alert(thrownError);
+			}
+		});
 	}
 		
 	function makeuserquery(){

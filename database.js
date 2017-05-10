@@ -135,6 +135,9 @@ database.prototype.searchcat=function(sql){
 					html+="<td>"
 					html+=rows[i].mediaType;
 					html+="</td>"
+					html+="<td>"
+					html+="<a href='http://localhost:8080/getfiles?address="+rows[i].fileAddress+"' target=\"_blank\" id=\""+rows[i].albumName+"\" value=\""+rows[i].fileAddress+"\">download</a>"
+					html+="</td>"
 					html += "</tr>"
 				}
 				html+="</table>";
@@ -210,6 +213,7 @@ database.prototype.pending=function(){
 				html += fields[i].name;
 				html += "</th>";
 			}
+			html += "<th>vote</th>";
 			html += "</tr>";
 			for (var i = 0; i < rows.length; i++){
 				html+="<tr>";
@@ -223,8 +227,9 @@ database.prototype.pending=function(){
 				html+=rows[i].label;
 				html+="</td>"
 				html+="<td>"
-				html+=rows[i].fileAddress;
+				html+="<a href='http://localhost:8080/getfiles?address="+rows[i].fileAddress+"' target=\"_blank\" id=\""+rows[i].albumName+"\" value=\""+rows[i].fileAddress+"\">download</a>"
 				html+="</td>"
+				html+="<td><a href='#'>like</a> <a href='#'>dislike</a></td>"
 				html += "</tr>"
 				}
 			html+="</table></div>";
