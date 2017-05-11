@@ -31,6 +31,12 @@ database.prototype.add=function(sql){
 	con.query(sql);
 };
 
+database.prototype.vote=function(sql){
+	console.log(sql);
+	
+	con.query(sql);
+};
+
 database.prototype.isincatalog=function(sql){
 	console.log(sql);
 	var self = this;
@@ -195,9 +201,10 @@ database.prototype.adds=function(sql){
 	});
 };
 
-database.prototype.pending=function(){
+database.prototype.pending=function(userid){
 	var self = this;
-	var query = "select albumName, artistName, label, fileAddress from catalog where mediaType='Digital' and submissionStatus='Pending' and dateSubmitted > DATE_SUB(curdate(), INTERVAL 2 WEEK);";
+	var query = "select albumName, artistName, label, fileAddress, albumID from catalog where not exists(select null from votes where catalog.albumID=votes.albumID and votes.username='"+userid+"') and mediaType='Digital' and submissionStatus='Pending' and dateSubmitted > DATE_SUB(curdate(), INTERVAL 2 WEEK);";
+	//console.log(query);
 	con.query(query,function(err, rows, fields){
 		if(err){
 			console.log(err);
@@ -208,7 +215,7 @@ database.prototype.pending=function(){
 		}
 		else{
 			var html = "<div id=\"content\" class=\"content\"><table id=\"table\" border=\"1\"><tr>";
-			for(var i=0; i < fields.length; i++){
+			for(var i=0; i < fields.length-1; i++){
 				html += "<th>";
 				html += fields[i].name;
 				html += "</th>";
@@ -216,7 +223,7 @@ database.prototype.pending=function(){
 			html += "<th>vote</th>";
 			html += "</tr>";
 			for (var i = 0; i < rows.length; i++){
-				html+="<tr>";
+				html+="<tr id='"+rows[i].albumID+"' class='rows'>";
 				html+="<td>"
 				html+=rows[i].albumName;
 				html+="</td>"
@@ -229,7 +236,7 @@ database.prototype.pending=function(){
 				html+="<td>"
 				html+="<a href='http://localhost:8080/getfiles?address="+rows[i].fileAddress+"' target=\"_blank\" id=\""+rows[i].albumName+"\" value=\""+rows[i].fileAddress+"\">download</a>"
 				html+="</td>"
-				html+="<td><a href='#'>like</a> <a href='#'>dislike</a></td>"
+				html+="<td><a href='http://localhost:8080/vote?album="+rows[i].albumID+"&vote=like' class=\"vote\" target=\"_blank\">like</a> <a href='http://localhost:8080/vote?album="+rows[i].albumID+"&vote=dislike' class=\"vote\" target=\"_blank\">dislike</a></td>"
 				html += "</tr>"
 				}
 			html+="</table></div>";

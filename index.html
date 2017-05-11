@@ -5,8 +5,10 @@
  
  <script src="./jquery-3.1.1.min.js"></script>
  <script type="text/javascript">
-	function download(evt){
-		//alert(evt.target.getAttribute("value"));
+	function vote(){
+		$.when($.ready).then(function(){
+			alert("fk");
+		});
 	}
  
 	function getmsg(){
@@ -29,6 +31,10 @@
 				}
 			});
 	}
+	
+	function register(){
+		alert("yo");
+	}
  
 	function loadindex(){
 		document.getElementById("viewcatalog").addEventListener("click", getqueries);
@@ -47,7 +53,9 @@
 				
 				//fill div with response on success
 				success: function(msg){
-					document.getElementById("login").innerHTML = msg;
+					var html = $.parseHTML(msg);
+					$("#login").replaceWith(html);
+					//document.getElementById("login").innerHTML = html;
 				},
 				
 				error: function(xhr, ajaxOptions, thrownError){
@@ -76,6 +84,7 @@
 				}
 			});
 	}
+	
 	function getqueries(){
 		var url = "http://localhost:8080/catalog"
 		$.ajax({
@@ -132,6 +141,13 @@
 		$("#content").replaceWith(html);
 	}
 	
+	function removeonclick(table, ids, i){
+		var row = ids[Math.floor(i/2)].id;
+		table[i].addEventListener("click",function(){
+			$("#"+row).remove();
+		},false);
+	}
+	
 	function submissionbrowser(){
 		$.ajax({
 			type: "GET",
@@ -142,16 +158,13 @@
 			
 			success: function(msg){
 				var html = $.parseHTML(msg);
-				$("#content").replaceWith(html);
-				var table = document.getElementsByTagName('td');
-				for(var i = 0; i < table.length; i++){
-					if(table[i].innerHTML.includes("</a>")){
-						//alert(i);
-						var ext = table[i].firstChild.getAttribute("value");
-						var id = table[i].firstChild.getAttribute("id");
-						document.getElementById(id).addEventListener("click", download, false);
-					}
-				}
+				$.when( $("#content").replaceWith(html) ).then(function(){
+					var table = document.getElementsByClassName("vote");
+					var ids = document.getElementsByClassName("rows");
+						for(var i = 0; i < table.length; i++){
+							removeonclick(table, ids, i);
+						}					
+				});
 			},
 			error: function(xhr, ajaxOptions, thrownError){
 				alert(thrownError);

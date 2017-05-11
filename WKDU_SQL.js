@@ -49,12 +49,12 @@ app.get("/add", function(req,res){
 app.get('/loadindex', function (req, res){
 	if(!req.session.userid){
 		console.log("sending login form")
-		html = 	"<a href=\"#\" onclick=\"register()\">Create an Account<\a><form method=post action='/login' class='login'><input type=\"text\" name=\"username\" placeholder=\"username\" class=\"login\" value=\"\"><input type=\"password\" name=\"password\" placeholder=\"password\" class=\"login\" value=\"\"><input type=\"submit\" value=\"Login\" class=\"login\" onclick=\"getmsg()\">"
+		html = 	"<div class=\"login\" id=\"login\"><a href=\"#\" onclick=\"register()\">Create an Account<\a><form method=post action='/login' class='login'><input type=\"text\" name=\"username\" placeholder=\"username\" class=\"login\" value=\"\"><input type=\"password\" name=\"password\" placeholder=\"password\" class=\"login\" value=\"\"><input type=\"submit\" value=\"Login\" class=\"login\" onclick=\"getmsg()\"></div>"
 		res.send(html);
 	}
 	else{
 		console.log("logged in")
-		html = "<a href=\"account\">"+ req.session.userid +"</a>	<a href=\"logout\">logout</a>"
+		html = "<div class=\"login\" id=\"login\"><a href=\"account\">"+ req.session.userid +"</a>	<a href=\"logout\">logout</a></div>"
 		res.send(html);
 	}
 });
@@ -465,7 +465,7 @@ app.get('/search', function(req,res){
 app.get('/submissionbrowser', function(req,res){
 	console.log(req.session.usertype);
 	if(req.session.usertype == 'member' || req.session.usertype == 'admin' || req.session.usertype == 'superadmin'){
-		db.pending();
+		db.pending(req.session.userid);
 		db.once('found', function(msg){
 			res.send(msg);
 		});
@@ -497,6 +497,22 @@ app.get('/download', function(req,res){
 	}
 	else{
 		res.redirect('http://localhost:8080');
+	}
+});
+
+app.get('/vote', function(req,res){
+	console.log(req.query.album);
+	if(req.session.usertype == 'member' || req.session.usertype == 'admin' || req.session.usertype == 'superadmin'){
+		var query = "insert into votes values ('"+req.session.userid+"',"+req.query.album+",'"+req.query.vote+"')";
+		
+		db.vote(query);
+		
+		var html = "<body onload=window.close()>vote submitted, thank you!</body>";
+		res.send(html);
+	}
+	else{
+		var html = "<body onload=window.close()>you don't have permission to vote on submissions.</body>";
+		res.send(html);
 	}
 });
 
