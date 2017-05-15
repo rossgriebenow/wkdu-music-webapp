@@ -5,11 +5,6 @@
  
  <script src="./jquery-3.1.1.min.js"></script>
  <script type="text/javascript">
-	function vote(){
-		$.when($.ready).then(function(){
-			alert("fk");
-		});
-	}
  
 	function getmsg(){
 			$.ajax({
@@ -33,13 +28,69 @@
 	}
 	
 	function register(){
-		alert("yo");
+		var string = "<div class=\"content\" id=\"content\"><h2>Register</h2><form action=\"javascript:void(0);\">please fill in all fields:<br><input type='text' name='firstname' placeholder='first name'><br><input type='text' name='lastname' placeholder='last name'><br><input type='text' name='email' placeholder='email address'><br><input type='text' name='username' placeholder='username'><br><input type='password' name='password' placeholder='password'><br><fieldset style='width:300px'><legend>User Type:</legend><input type='radio' name='type' value='submitter'>Artist/Label/Radio Promoter<br><input type='radio' name='type' value='member'>WKDU Member</fieldset><input type='submit' value='Request Account' onclick='registration()'></form></div>";
+		var html = $.parseHTML(string);
+		$("#content").replaceWith(html);
+	}
+	
+	function registration(){
+		//alert("Thank you! Your account has been created, an administrator will review it as soon as possible.")
+		var data=$('form').serializeArray();
+			
+			var regex = /^([a-zA-Z0-9_.+-])+\@(([a-zA-Z0-9-])+\.)+([a-zA-Z0-9]{2,4})+$/;
+			var validemail = regex.test(data[4].value);
+			var notblank=true;
+			
+			for(var i = 2; i<data.length; i++){
+				if(data[i].value.length==0){
+					notblank = false;
+				}
+			}
+			
+			if(!validemail){
+				alert("Please enter a valid email address.");
+			}
+			else if(!notblank){
+				alert("All fields must be filled.");
+			}
+			else{
+				var first = data[2].value;
+				var last = data[3].value;
+				var email = data[4].value;
+				var username = data[5].value;
+				var password = data[6].value;
+				var type = data[7].value;
+				
+				var json = {"first":first, "last":last, "email":email, "username":username, "password": password, "type":type};
+				
+				$.ajax({
+					type: "POST",
+					url: "http://localhost:8080/register",
+					//contentType: "application/json; charset=utf-8",
+					data: json,
+					//datatype: "html",
+					
+					success: function(msg){
+						if(msg=="false"){
+							alert("An account with the information you entered already exists. Please contact musicdirector@wkdu.org for assistance.");
+						}
+						else{
+							alert("Thank you for registering! An administrator will validate your account as soon as possible.");
+							window.location.reload();
+						}
+					},
+					error: function(xhr, ajaxOptions, thrownError){
+						alert(thrownError);
+					}
+				});
+			}
 	}
  
 	function loadindex(){
 		document.getElementById("viewcatalog").addEventListener("click", getqueries);
 		document.getElementById("submit").addEventListener("click", getsubmitter);
 		document.getElementById("viewsub").addEventListener("click", submissionbrowser);
+		document.getElementById("makeplaylist").addEventListener("click", makeplaylist);
 	
 	
 		var url = "http://localhost:8080/loadindex"
@@ -64,6 +115,7 @@
 				}
 			});
 	}
+	
 	function logout(){
 		var url = "http://localhost:8080/logout"
 			$.ajax({
@@ -215,6 +267,7 @@
 	}
 	
 	function gethistory(){
+
 		var url = "http://localhost:8080/history"
 		
 		$.ajax({
@@ -232,6 +285,7 @@
 			}
 		});
 	}
+	
 	function getadds(){
 		var url = "http://localhost:8080/adds"
 		
@@ -251,7 +305,7 @@
 		});
 	}
 	
-		function addToCatalog() {
+	function addToCatalog() {
 		var formFilled = true;
 		//use jQuery to make sure fields are filled out
 		$(":text").each(function() {
@@ -314,6 +368,60 @@
 	
 	}
 	
+		// add a row
+	function addRow() {
+		var pt = document.getElementById("p");
+		/*
+		var count = pt.rows.length;
+		var newRow = pt.insertRow(count);
+		newRow.innerHTML = "Artist: <input type=\"text\" class=\"artist\" value=\"\"> Song: <input type=\"text\" class=\"song\" value=\"\"> <button onclick=\"deleteRow(this)\">Delete row</button>";
+		*/
+		pt.innerHTML += "<p class=\"line\">Artist: <input type=\"text\" class=\"artist\" value=\"\"> Song: <input type=\"text\" class=\"song\" value=\"\"> <button onclick=\"deleteRow(this)\">Delete row</button></p>"
+	}
+
+	// delete a row
+	function deleteRow(row) {
+		/*
+		var i = row.parentNode.rowIndex;
+		document.getElementById("playlistTable").deleteRow(i);
+		*/
+		
+		var p = row.parentNode;
+		p.innerHTML = '';
+	}
+
+	// get JSON representation of playlist
+	function submitplaylist() {
+		var artists = document.getElementsByClassName("artist");
+		var songs = document.getElementsByClassName("song");
+		var out = document.getElementById("out");
+		var length = artists.length;
+		
+		/*for (var i = 0; i < length; i++) {
+			out.innerHTML += artists[i].value + " - " + songs[i].value;
+			out.innerHTML += "\n";
+		}*/
+		var d = new Date();
+		var j = {
+			"user":"Ryan",
+			"date":d.toJSON(),
+			"artists":[],
+			"songs":[]
+		}
+		
+		for (var i = 0; i < length; i++) {
+			j.artists[i] = artists[i].value;
+			j.songs[i] = songs[i].value;
+		}
+		
+	}
+ 
+	function makeplaylist() {
+		var str = "<div id=\"content\" class=\"content\"><h1>Add a Playlist</h1><hr><div id=\"p\"><p class=\"line\">Artist: <input type=\"text\" class=\"artist\" value=\"\"> Song: <input type=\"text\" class=\"song\" value=\"\"> <button onclick=\"deleteRow(this)\">Delete row</button></p></div><br></br><button onclick=\"addRow()\">Add row</button><br></br><button onclick=\"submitplaylist()\">Submit</button><div id=\"out\"></div></div>"
+		var html = $.parseHTML(str);
+		$("#content").replaceWith(html);
+	}
+	
  </script>
 </head>
 <body onload="loadindex()">
@@ -330,7 +438,7 @@
 <div id="links" class="links">
 	<a href="index.html">Home</a><br><br>
 	<a href="#">View Playlists</a><br><br>
-	<a href="#">New Playlist</a><br><br>
+	<a href="#" id="makeplaylist">New Playlist</a><br><br>
 	<a href="#" id="viewcatalog">View Catalog</a><br><br>
 	<a href="#" id="submit">Submit</a><br><br>
 	<a href="#" id="viewsub">Browse Submissions</a><br><br>
