@@ -92,6 +92,35 @@ app.post('/login', function (req, res){
 	db.login(req.body.username, req.body.password);
 });
 
+app.post('/register', function(req,res){
+	console.log(req.body);
+	
+	var first = req.body.first;
+	var last = req.body.last;
+	var email = req.body.email;
+	var username = req.body.username;
+	var password = req.body.password;
+	var type = req.body.type;
+	
+	db.register(first,last,email,username,password);
+	
+	db.once('valid', function(msg){
+		var valid = msg;
+		if(valid){
+			req.session.usertype = 'pending';
+			req.session.userid = req.body.username;
+			res.send("true");
+			
+		}
+		else{
+			res.send("false");
+		}
+	});
+	
+	//res.redirect('/');
+
+});
+
 app.get('/getmsg', function (req, res){
 	db.once('loggedin', function(msg){
 		if(msg==0){

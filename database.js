@@ -19,6 +19,7 @@ con.connect(function(err) {
 		console.log('Database successfully connected');
 	}
 });
+
 function database(){
 	EventEmitter.call(this);
 }
@@ -297,6 +298,34 @@ con.query(str,
 			}
 		}
 	);
+};
+
+database.prototype.register=function(first,last,email,username,password){
+	var query = "select * from users where (firstname="+con.escape(first)+"and lastname="+con.escape(last)+") or username="+con.escape(username)+"or email="+con.escape(email)+";";
+	var self = this;
+	console.log(query);
+	
+	con.query(query,function(err,rows,fields){
+		if(err){
+			console.log(err);
+		}
+		else{
+			if(rows.length>0){
+				self.emit('valid',false);
+			}
+			else{
+				self.emit('valid', true);
+				adduser(first,last,email,username,password);
+
+			}
+		}
+	});
+};
+
+function adduser(first,last,email,username,password){
+	var query = "insert into users (username, password, type, firstname, lastname, email) values (+"+con.escape(username)+", PASSWORD("+con.escape(password)+"), 'pending', "+con.escape(first)+", "+con.escape(last)+", "+con.escape(email)+");";
+	console.log(query);
+	con.query(query);
 };
 
 module.exports = database;
