@@ -532,7 +532,7 @@ app.get('/download', function(req,res){
 app.get('/vote', function(req,res){
 	console.log(req.query.album);
 	if(req.session.usertype == 'member' || req.session.usertype == 'admin' || req.session.usertype == 'superadmin'){
-		var query = "insert into votes values ('"+req.session.userid+"',"+req.query.album+",'"+req.query.vote+"')";
+		var query = "insert into votes(username, albumID, vote) (select '"+req.session.userid+"',"+req.query.album+",'"+req.query.vote+"' from votes where not exists (select * from votes where username ='"+req.session.userid+"' and albumID='"+req.query.album+"') limit 1 );";
 		
 		db.vote(query);
 		
@@ -541,6 +541,18 @@ app.get('/vote', function(req,res){
 	}
 	else{
 		var html = "<body onload=window.close()>you don't have permission to vote on submissions.</body>";
+		res.send(html);
+	}
+});
+
+app.get('/makeplaylist', function(req, res){
+	if(req.session.usertype == 'member' || req.session.usertype == 'admin' || req.session.usertype == 'superadmin'){
+		//var html = "<div id=\"content\" class=\"content\"><h3>Add a Playlist</h3><hr><div id=\"p\"><p class=\"line\">Artist: <input type=\"text\" class=\"artist\" value=\"\"> Song: <input type=\"text\" class=\"song\" value=\"\"> <button onclick=\"deleteRow(this)\">Delete row</button></p></div><br></br><button onclick=\"addRow()\">Add row</button><br></br><button onclick=\"submitplaylist()\">Submit</button><div id=\"out\"></div></div>"
+		var html = "<div id=\"content\" class=\"content\"><h1>Add a Playlist</h1><hr><div id=\"p\"><p class=\"line\"><input type=\"text\" class=\"artist\" value=\"\" placeholder=\"Artist\"><input type=\"text\" class=\"song\" value=\"\" placeholder=\"Title\"><input type=\"text\" class=\"album\" value=\"\" placeholder=\"Album\"><input type=\"text\" class=\"label\" value=\"\" placeholder=\"Label\"> New:<input type=\"checkbox\" class=\"new\" value=\"New\" name=\"New\"> Local:<input type=\"checkbox\" class=\"local\" value=\"Local\" name=\"Local\"><button onclick=\"deleteRow(this)\">Delete row</button></p></div><br></br><button onclick=\"addRow()\">Add row</button><br></br><button onclick=\"submitplaylist()\">Submit</button><div id=\"out\"></div></div>"
+		res.send(html);
+	}
+	else{
+		var html = "<div id=\"content\" class=\"content\">You don't have permission to make playlists.</div>";
 		res.send(html);
 	}
 });

@@ -376,7 +376,8 @@
 		var newRow = pt.insertRow(count);
 		newRow.innerHTML = "Artist: <input type=\"text\" class=\"artist\" value=\"\"> Song: <input type=\"text\" class=\"song\" value=\"\"> <button onclick=\"deleteRow(this)\">Delete row</button>";
 		*/
-		pt.innerHTML += "<p class=\"line\">Artist: <input type=\"text\" class=\"artist\" value=\"\"> Song: <input type=\"text\" class=\"song\" value=\"\"> <button onclick=\"deleteRow(this)\">Delete row</button></p>"
+		pt.innerHTML += "<p class=\"line\"><input type=\"text\" class=\"artist\" value=\"\" placeholder=\"Artist\"><input type=\"text\" class=\"song\" value=\"\" placeholder=\"Title\"><input type=\"text\" class=\"album\" value=\"\" placeholder=\"Album\"><input type=\"text\" class=\"label\" value=\"\" placeholder=\"Label\"> New:<input type=\"checkbox\" class=\"new\" value=\"New\" name=\"New\"> Local:<input type=\"checkbox\" class=\"local\" value=\"Local\" name=\"Local\"><button onclick=\"deleteRow(this)\">Delete row</button></p>"
+		//pt.innerHTML += "<p class=\"line\">Artist: <input type=\"text\" class=\"artist\" value=\"\"> Song: <input type=\"text\" class=\"song\" value=\"\"> <button onclick=\"deleteRow(this)\">Delete row</button></p>"
 	}
 
 	// delete a row
@@ -394,6 +395,10 @@
 	function submitplaylist() {
 		var artists = document.getElementsByClassName("artist");
 		var songs = document.getElementsByClassName("song");
+		var albums = document.getElementsByClassName("album");
+		var labels = document.getElementsByClassName("label");
+		var newmusic = document.getElementsByClassName("new");
+		var localmusic = document.getElementsByClassName("local");
 		var out = document.getElementById("out");
 		var length = artists.length;
 		
@@ -406,20 +411,41 @@
 			"user":"Ryan",
 			"date":d.toJSON(),
 			"artists":[],
-			"songs":[]
+			"songs":[],
+			"albums":[],
+			"labels":[],
+			"new":[],
+			"local":[]
 		}
 		
 		for (var i = 0; i < length; i++) {
 			j.artists[i] = artists[i].value;
 			j.songs[i] = songs[i].value;
+			j.albums[i] = albums[i].value;
+			j.labels[i] = labels[i].value;
+			j.new[i] = newmusic[i].checked;
+			j.local[i] = localmusic[i].checked;
 		}
 		
 	}
  
 	function makeplaylist() {
-		var str = "<div id=\"content\" class=\"content\"><h1>Add a Playlist</h1><hr><div id=\"p\"><p class=\"line\">Artist: <input type=\"text\" class=\"artist\" value=\"\"> Song: <input type=\"text\" class=\"song\" value=\"\"> <button onclick=\"deleteRow(this)\">Delete row</button></p></div><br></br><button onclick=\"addRow()\">Add row</button><br></br><button onclick=\"submitplaylist()\">Submit</button><div id=\"out\"></div></div>"
-		var html = $.parseHTML(str);
-		$("#content").replaceWith(html);
+		var url = "http://localhost:8080/makeplaylist"
+		$.ajax({
+			type: "GET",
+			url: url,
+			contentType: "application/json; charset=utf-8",
+			data: {},
+			datatype: "html",
+			
+			success: function(msg){
+					var html = $.parseHTML(msg);
+					$("#content").replaceWith(html);
+			},
+			error: function(xhr, ajaxOptions, thrownError){
+				alert(thrownError);
+			}
+		});
 	}
 	
  </script>
