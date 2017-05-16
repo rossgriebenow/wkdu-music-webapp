@@ -54,7 +54,7 @@ app.get('/loadindex', function (req, res){
 	}
 	else{
 		console.log("logged in")
-		html = "<div class=\"login\" id=\"login\"><a href=\"account\">"+ req.session.userid +"</a>	<a href=\"logout\">logout</a></div>"
+		html = "<div class=\"login\" id=\"login\"><a href=\"#\" onclick=\"account()\">"+ req.session.userid +"</a>	<a href=\"logout\">logout</a></div>"
 		res.send(html);
 	}
 });
@@ -547,14 +547,77 @@ app.get('/vote', function(req,res){
 
 app.get('/makeplaylist', function(req, res){
 	if(req.session.usertype == 'member' || req.session.usertype == 'admin' || req.session.usertype == 'superadmin'){
-		//var html = "<div id=\"content\" class=\"content\"><h3>Add a Playlist</h3><hr><div id=\"p\"><p class=\"line\">Artist: <input type=\"text\" class=\"artist\" value=\"\"> Song: <input type=\"text\" class=\"song\" value=\"\"> <button onclick=\"deleteRow(this)\">Delete row</button></p></div><br></br><button onclick=\"addRow()\">Add row</button><br></br><button onclick=\"submitplaylist()\">Submit</button><div id=\"out\"></div></div>"
-		var html = "<div id=\"content\" class=\"content\"><h1>Add a Playlist</h1><hr><div id=\"p\"><p class=\"line\"><input type=\"text\" class=\"artist\" value=\"\" placeholder=\"Artist\"><input type=\"text\" class=\"song\" value=\"\" placeholder=\"Title\"><input type=\"text\" class=\"album\" value=\"\" placeholder=\"Album\"><input type=\"text\" class=\"label\" value=\"\" placeholder=\"Label\"> New:<input type=\"checkbox\" class=\"new\" value=\"New\" name=\"New\"> Local:<input type=\"checkbox\" class=\"local\" value=\"Local\" name=\"Local\"><button onclick=\"deleteRow(this)\">Delete row</button></p></div><br></br><button onclick=\"addRow()\">Add row</button><br></br><button onclick=\"submitplaylist()\">Submit</button><div id=\"out\"></div></div>"
+		var html = "<div id=\"content\" class=\"content\"><h3>Add a Playlist</h3><hr><div id=\"p\"><p class=\"line\"><input type=\"text\" class=\"artist\" value=\"\" placeholder=\"Artist\" list=\"artistsuggest0\" oninput=\"suggestartist(this)\"><input type=\"text\" class=\"song\" value=\"\" placeholder=\"Title\"><input type=\"text\" class=\"album\" value=\"\" placeholder=\"Album\" list=\"albumsuggest0\" oninput=\"suggestalbum(this)\"><input type=\"text\" class=\"label\" value=\"\" placeholder=\"Label\"> New:<input type=\"checkbox\" class=\"new\" value=\"New\" name=\"New\"> Local:<input type=\"checkbox\" class=\"local\" value=\"Local\" name=\"Local\"><button onclick=\"deleteRow(this)\">Delete row</button><datalist class=\"artistsuggest\" id=\"artistsuggest0\"></datalist><datalist class=\"albumsuggest\" id=\"albumsuggest0\"><option value=\"yo\"></datalist></p></div><br></br><button onclick=\"addRow()\">Add row</button><br></br><button onclick=\"submitplaylist()\">Submit</button><div id=\"out\"></div></div>"
 		res.send(html);
 	}
 	else{
 		var html = "<div id=\"content\" class=\"content\">You don't have permission to make playlists.</div>";
 		res.send(html);
 	}
+});
+
+app.post('/artistsuggest',function(req,res){
+	if(req.session.usertype == 'member' || req.session.usertype == 'admin' || req.session.usertype == 'superadmin'){
+		db.getartistsuggestions(req.body.input);
+		db.once('suggested', function(msg){
+			//console.log(msg);
+			res.send(msg);
+		});
+	}
+	else{
+		res.send("");
+	}
+});
+
+app.post('/albumsuggest',function(req,res){
+	if(req.session.usertype == 'member' || req.session.usertype == 'admin' || req.session.usertype == 'superadmin'){
+		db.getalbumsuggestions(req.body.input, req.body.artist);
+		db.once('suggested', function(msg){
+			//console.log(msg);
+			res.send(msg);
+		});
+	}
+	else{
+		res.send("");
+	}
+});
+
+app.get('/account', function(req,res){
+	var html = "<div id=\"content\" class=\"content\"><h3>My Account</h3><hr>"
+	
+	if(req.session.usertype == 'member'){
+		html += "Account type: WKDU Member";
+		html += "<br><a href='#' onclick=\"myplaylists()\">View my past playlists</a>";
+		html += "<br><a href='#' onclick=\"gethistory()\">View my past submissions</a>";
+	}
+	if(req.session.usertype == 'pending'){
+		html += "Account type: Pending. Please wait for an administrator to approve your account or contact WKDU for assistance.";
+	}
+	if(req.session.usertype == 'admin'){
+		html += "Account type: Administrator";
+		html += "<br><a href='#' onclick=\"viewusers()\">View pending user accounts</a>";
+		html += "<br><a href='#' onclick=\"viewpending()\">View pending adds</a>";
+		html += "<br><a href='#' onclick=\"makeaddschart()\">Create a new Top 5 Adds chart</a>";
+		html += "<br><a href='#' onclick=\"maketop30chart()\">Create a new Top 30 Heavy Rotation chart</a>";
+		html += "<br><a href='#' onclick=\"myplaylists()\">View my past playlists</a>";
+		html += "<br><a href='#' onclick=\"gethistory()\">View my past submissions</a>";
+	}
+	if(req.session.usertype == 'superadmin'){
+		html += "Account type: Superadmin";
+		html += "<br><a href='#' onclick=\"viewusers()\">View pending user accounts</a>";
+		html += "<br><a href='#' onclick=\"viewpending()\">View pending adds</a>";
+		html += "<br><a href='#' onclick=\"makeaddschart()\">Create a new Top 5 Adds chart</a>";
+		html += "<br><a href='#' onclick=\"maketop30chart()\">Create a new Top 30 Heavy Rotation chart</a>";
+		html += "<br><a href='#' onclick=\"myplaylists()\">View my past playlists</a>";
+		html += "<br><a href='#' onclick=\"gethistory()\">View my past submissions</a>";
+	}
+	if(req.session.usertype == 'submitter'){
+		html += "Account type: Artist/Label/Promoter";
+		html += "<br><a href='#' onclick=\"gethistory()\">View my past submissions</a>";
+	}
+	
+	html+="</div>"
+	res.send(html);
 });
 
 app.listen(8080);
