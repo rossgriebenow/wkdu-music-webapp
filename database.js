@@ -322,6 +322,35 @@ database.prototype.register=function(first,last,email,username,password){
 	});
 };
 
+database.prototype.getartistsuggestions=function(input){
+	var self = this;
+	var query = "select artistName from catalog where artistName like '"+input+"%' limit 10;";
+	con.query(query, function(err,rows,fields){
+		self.emit('suggested',rows);
+	});
+}
+
+database.prototype.getalbumsuggestions=function(input, artist){
+	var self = this;
+	var query = "select albumName, label from catalog where ";
+	
+	if(input!=""){
+		query += "albumName like '"+input+"%'";
+		if(artist!=""){
+			query+=" and"
+		}
+	}
+	
+	if(artist!=""){
+		query += " artistName='"+artist+"'";
+	}
+	
+	query += " limit 10;";
+	con.query(query, function(err,rows,fields){
+		self.emit('suggested',rows);
+	});
+}
+
 function adduser(first,last,email,username,password){
 	var query = "insert into users (username, password, type, firstname, lastname, email) values (+"+con.escape(username)+", PASSWORD("+con.escape(password)+"), 'pending', "+con.escape(first)+", "+con.escape(last)+", "+con.escape(email)+");";
 	console.log(query);

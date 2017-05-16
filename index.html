@@ -28,7 +28,7 @@
 	}
 	
 	function register(){
-		var string = "<div class=\"content\" id=\"content\"><h2>Register</h2><form action=\"javascript:void(0);\">please fill in all fields:<br><input type='text' name='firstname' placeholder='first name'><br><input type='text' name='lastname' placeholder='last name'><br><input type='text' name='email' placeholder='email address'><br><input type='text' name='username' placeholder='username'><br><input type='password' name='password' placeholder='password'><br><fieldset style='width:300px'><legend>User Type:</legend><input type='radio' name='type' value='submitter'>Artist/Label/Radio Promoter<br><input type='radio' name='type' value='member'>WKDU Member</fieldset><input type='submit' value='Request Account' onclick='registration()'></form></div>";
+		var string = "<div class=\"content\" id=\"content\"><h2>Register</h2><hr><form action=\"javascript:void(0);\">please fill in all fields:<br><input type='text' name='firstname' placeholder='first name'><br><input type='text' name='lastname' placeholder='last name'><br><input type='text' name='email' placeholder='email address'><br><input type='text' name='username' placeholder='username'><br><input type='password' name='password' placeholder='password'><br><fieldset style='width:300px'><legend>User Type:</legend><input type='radio' name='type' value='submitter'>Artist/Label/Radio Promoter<br><input type='radio' name='type' value='member'>WKDU Member</fieldset><input type='submit' value='Request Account' onclick='registration()'></form></div>";
 		var html = $.parseHTML(string);
 		$("#content").replaceWith(html);
 	}
@@ -91,6 +91,7 @@
 		document.getElementById("submit").addEventListener("click", getsubmitter);
 		document.getElementById("viewsub").addEventListener("click", submissionbrowser);
 		document.getElementById("makeplaylist").addEventListener("click", makeplaylist);
+		document.getElementById("contact").addEventListener("click", contact);
 	
 	
 		var url = "http://localhost:8080/loadindex"
@@ -371,13 +372,10 @@
 		// add a row
 	function addRow() {
 		var pt = document.getElementById("p");
-		/*
-		var count = pt.rows.length;
-		var newRow = pt.insertRow(count);
-		newRow.innerHTML = "Artist: <input type=\"text\" class=\"artist\" value=\"\"> Song: <input type=\"text\" class=\"song\" value=\"\"> <button onclick=\"deleteRow(this)\">Delete row</button>";
-		*/
-		pt.innerHTML += "<p class=\"line\"><input type=\"text\" class=\"artist\" value=\"\" placeholder=\"Artist\"><input type=\"text\" class=\"song\" value=\"\" placeholder=\"Title\"><input type=\"text\" class=\"album\" value=\"\" placeholder=\"Album\"><input type=\"text\" class=\"label\" value=\"\" placeholder=\"Label\"> New:<input type=\"checkbox\" class=\"new\" value=\"New\" name=\"New\"> Local:<input type=\"checkbox\" class=\"local\" value=\"Local\" name=\"Local\"><button onclick=\"deleteRow(this)\">Delete row</button></p>"
-		//pt.innerHTML += "<p class=\"line\">Artist: <input type=\"text\" class=\"artist\" value=\"\"> Song: <input type=\"text\" class=\"song\" value=\"\"> <button onclick=\"deleteRow(this)\">Delete row</button></p>"
+		var index = document.getElementsByClassName("line").length;
+		var str = "<p class=\"line\"><input type=\"text\" class=\"artist\" value=\"\" placeholder=\"Artist\" list=\"artistsuggest"+index+"\" oninput=\"suggestartist(this)\"><input type=\"text\" class=\"song\" value=\"\" placeholder=\"Title\"><input type=\"text\" class=\"album\" value=\"\" placeholder=\"Album\" list=\"albumsuggest"+index+"\" oninput=\"suggestalbum(this)\"><input type=\"text\" class=\"label\" value=\"\" placeholder=\"Label\"> New:<input type=\"checkbox\" class=\"new\" value=\"New\" name=\"New\"> Local:<input type=\"checkbox\" class=\"local\" value=\"Local\" name=\"Local\"><button onclick=\"deleteRow(this)\">Delete row</button><datalist class=\"artistsuggest\" id=\"artistsuggest"+index+"\"></datalist><datalist class=\"albumsuggest\"id=\"albumsuggest"+index+"\"></datalist></p>"
+		var html = $.parseHTML(str);
+		$("#p").append(html);
 	}
 
 	// delete a row
@@ -402,10 +400,6 @@
 		var out = document.getElementById("out");
 		var length = artists.length;
 		
-		/*for (var i = 0; i < length; i++) {
-			out.innerHTML += artists[i].value + " - " + songs[i].value;
-			out.innerHTML += "\n";
-		}*/
 		var d = new Date();
 		var j = {
 			"user":"Ryan",
@@ -440,7 +434,7 @@
 			
 			success: function(msg){
 					var html = $.parseHTML(msg);
-					$("#content").replaceWith(html);
+					$("#content").replaceWith(html);					
 			},
 			error: function(xhr, ajaxOptions, thrownError){
 				alert(thrownError);
@@ -448,6 +442,97 @@
 		});
 	}
 	
+	function suggestartist(input) {	
+		var json = {"input":input.value};
+		$.ajax({
+			type: "POST",
+			url: "http://localhost:8080/artistsuggest",
+			//contentType: "application/json; charset=utf-8",
+			data: json,
+			datatype: "json",
+			
+			success: function(msg){
+				var list = input.parentNode.getElementsByClassName("artistsuggest")[0];
+				while(list.firstChild){
+					list.removeChild(list.firstChild);
+				}
+				
+				if(msg.length>0){
+					for(var i = 0; i < msg.length; i++){
+						var option = document.createElement('option');
+						option.value=msg[i].artistName;
+						list.appendChild(option);
+					}
+				}
+			},
+			error: function(xhr, ajaxOptions, thrownError){
+				alert(thrownError);
+			}
+		});
+	}
+	
+	function suggestalbum(input) {
+		var artist = input.parentNode.getElementsByClassName("artist")[0].value;
+		var json = {"input":input.value, "artist":artist};
+		$.ajax({
+			type: "POST",
+			url: "http://localhost:8080/albumsuggest",
+			//contentType: "application/json; charset=utf-8",
+			data: json,
+			datatype: "json",
+			
+			success: function(msg){
+				var list = input.parentNode.getElementsByClassName("albumsuggest")[0];
+				while(list.firstChild){
+					list.removeChild(list.firstChild);
+				}
+				
+				if(msg.length>0){
+					for(var i = 0; i < msg.length; i++){
+						var option = document.createElement('option');
+						option.value=msg[i].albumName;
+						list.appendChild(option);
+						
+						if(input.value == msg[i].albumName){
+							input.parentNode.getElementsByClassName("label")[0].value = msg[i].label;
+						}
+					}
+				}
+			},
+			error: function(xhr, ajaxOptions, thrownError){
+				alert(thrownError);
+			}
+		});	
+	}
+	
+	function account(){
+		var url = "http://localhost:8080/account"
+		
+				$.ajax({
+				type: "GET",
+				url: url,
+				contentType: "application/json; charset=utf-8",
+				data: {},
+				dataType: "html",
+				
+				//fill div with response on success
+				success: function(msg){
+					var html = $.parseHTML(msg);
+					$("#content").replaceWith(html);
+				},
+				
+				error: function(xhr, ajaxOptions, thrownError){
+					alert(thrownError);
+					document.getElementById("login").innerHTML = "request failed"
+				}
+			});
+	}
+ 
+	function contact(){
+		var string = "<div class=\"content\" id=\"content\"><h3>Contact</h3><hr>email: <a href=\"mailto:musicdirector@wkdu.org\">musicdirector@wkdu.org<a><br>phone: (215)895-2082<br>Or go to <a href=\"http://wkdu.org/contact\">wkdu.org/contact</a></div>"
+		var html = $.parseHTML(string);
+		$("#content").replaceWith(html);
+	}
  </script>
 </head>
 <body onload="loadindex()">
@@ -468,7 +553,8 @@
 	<a href="#" id="viewcatalog">View Catalog</a><br><br>
 	<a href="#" id="submit">Submit</a><br><br>
 	<a href="#" id="viewsub">Browse Submissions</a><br><br>
-	<a href="http://www.wkdu.org">wkdu.org</a>
+	<a href="#" id="contact">Contact</a><br><br>
+	<a href="http://www.wkdu.org">wkdu.org</a><br><br>
 </div>
 
 
