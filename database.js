@@ -351,10 +351,105 @@ database.prototype.getalbumsuggestions=function(input, artist){
 	});
 }
 
+database.prototype.submittop5=function(json, user){
+	json_ = JSON.stringify(json);
+	var query = "insert into charts (creatorid, date, type, playlist) values ( (select userid from users where username='"+user+"'), now(), 'adds', '"+json_+"');";
+	
+	con.query(query);
+}
+
+database.prototype.submitplaylist=function(json, user){
+	var json_ = JSON.stringify(json);
+	
+	for(var i in artists){
+		var query = "update catalog set spinsAllTIme = spinsAllTime + 1, spinsWeek = spinsWeek + 1 where artistName='"+json.artists[i]+"' AND albumName = '"+json.albums[i]+"';";
+		con.query(query);
+	}
+	
+	var query = "insert into playlists (creatorid, date, playlist) values ( (select userid from users where username ='"+user+"'), now(), '"+json_+"');";
+	con.query(query);
+}
+
+database.prototype.submittop30=function(json, user){
+	json_ = JSON.stringify(json);
+	var query = "insert into charts (creatorid, date, type, playlist) values ( (select userid from users where username='"+user+"'), now(), 'top30', '"+json_+"');";
+	
+	con.query(query);
+	
+}
+
+database.prototype.getlatestadds=function(){
+	var query = "select playlist, MAX(date) AS current_chart from charts where type='adds';";
+	var self = this;
+	con.query(query, function(err, rows, fields){
+		if(err){
+			console.log(err);
+		}
+		else{
+			//console.log(rows[0].playlist);
+			self.emit('addschart',rows[0].playlist);
+		}
+	});
+}
+
+database.prototype.getlatesttop30=function(){
+	var query = "select playlist, MAX(date) AS current_chart from charts where type='top30';";
+	var self = this;
+	con.query(query, function(err, rows, fields){
+		if(err){
+			console.log(err);
+		}
+		else{
+			//console.log(rows[0].playlist);
+			self.emit('top30chart',rows[0].playlist);
+		}
+	});
+}
+
+database.prototype.getplaylists=function(){
+	var self = this;
+	var html = "<div id=\"content\" class=\"content\"><h3>Playlists</h3><hr>";
+	var query = "select * from playlists order by date desc limit 20;"
+	con.query(query, function(err,rows,fields){
+		if(err){
+			console.log(err);
+		}
+		else{
+			for (var i in rows){
+				html+="<a href=\"getplaylist?id="
+				html+=rows[i].chartid;
+				html+="\">";
+				html+= getusername(rows[i].creatorid);
+				html+= " on "
+				html+= rows[i].date;
+				html+="</a><br>";
+			}
+			html += "<a href=\"#\" id=\"viewdjplaylist\">Search playlists by DJ</a></div>"
+			
+			self.emit('playlist',html);
+		}
+	});
+}
+
 function adduser(first,last,email,username,password){
 	var query = "insert into users (username, password, type, firstname, lastname, email) values (+"+con.escape(username)+", PASSWORD("+con.escape(password)+"), 'pending', "+con.escape(first)+", "+con.escape(last)+", "+con.escape(email)+");";
 	console.log(query);
 	con.query(query);
 };
+
+function getusername(userid){
+	var query = "select username from users where userid=";
+	query += userid;
+	query += ";";
+	con.query(query,function(err,rows,fields){
+		if(err){
+			console.log(err);
+			return err;
+		}
+		else{
+			return rows[0].username;
+		}
+	});
+}
 
 module.exports = database;

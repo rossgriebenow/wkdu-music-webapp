@@ -547,7 +547,7 @@ app.get('/vote', function(req,res){
 
 app.get('/makeplaylist', function(req, res){
 	if(req.session.usertype == 'member' || req.session.usertype == 'admin' || req.session.usertype == 'superadmin'){
-		var html = "<div id=\"content\" class=\"content\"><h3>Add a Playlist</h3><hr><div id=\"p\"><p class=\"line\"><input type=\"text\" class=\"artist\" value=\"\" placeholder=\"Artist\" list=\"artistsuggest0\" oninput=\"suggestartist(this)\"><input type=\"text\" class=\"song\" value=\"\" placeholder=\"Title\"><input type=\"text\" class=\"album\" value=\"\" placeholder=\"Album\" list=\"albumsuggest0\" oninput=\"suggestalbum(this)\"><input type=\"text\" class=\"label\" value=\"\" placeholder=\"Label\"> New:<input type=\"checkbox\" class=\"new\" value=\"New\" name=\"New\"> Local:<input type=\"checkbox\" class=\"local\" value=\"Local\" name=\"Local\"><button onclick=\"deleteRow(this)\">Delete row</button><datalist class=\"artistsuggest\" id=\"artistsuggest0\"></datalist><datalist class=\"albumsuggest\" id=\"albumsuggest0\"><option value=\"yo\"></datalist></p></div><br></br><button onclick=\"addRow()\">Add row</button><br></br><button onclick=\"submitplaylist()\">Submit</button><div id=\"out\"></div></div>"
+		var html = "<div id=\"content\" class=\"content\"><form><h3>Add a Playlist</h3><hr><div id=\"p\"><p class=\"line\"><input type=\"text\" class=\"artist\" value=\"\" placeholder=\"Artist\" list=\"artistsuggest0\" oninput=\"suggestartist(this)\"><input type=\"text\" class=\"song\" value=\"\" placeholder=\"Title\"><input type=\"text\" class=\"album\" value=\"\" placeholder=\"Album\" list=\"albumsuggest0\" oninput=\"suggestalbum(this)\"><input type=\"text\" class=\"label\" value=\"\" placeholder=\"Label\"> New:<input type=\"checkbox\" class=\"new\" value=\"New\" name=\"New\"> Local:<input type=\"checkbox\" class=\"local\" value=\"Local\" name=\"Local\"><button onclick=\"deleteRow(this)\">Delete row</button><datalist class=\"artistsuggest\" id=\"artistsuggest0\"></datalist><datalist class=\"albumsuggest\" id=\"albumsuggest0\"><option value=\"yo\"></datalist></p></div><br></br><button onclick=\"addRow()\">Add row</button><br></br><button onclick=\"submitplaylist()\">Submit</button><div id=\"out\"></div></form></div>"
 		res.send(html);
 	}
 	else{
@@ -618,6 +618,291 @@ app.get('/account', function(req,res){
 	
 	html+="</div>"
 	res.send(html);
+});
+
+app.post('/submittop5', function(req,res){
+	console.log(req.body);
+	
+	if(req.session.usertype == 'admin' || req.session.usertype == 'superadmin'){
+		db.submittop5(req.body, req.session.userid);
+		res.send("Chart submitted!");
+	}
+	else{
+		res.send("you don't have permission to submit charts.");
+	}
+});
+
+app.post('/submittop30', function(req,res){
+	console.log(req.body);
+	
+	if(req.session.usertype == 'admin' || req.session.usertype == 'superadmin'){
+		db.submittop30(req.body, req.session.userid);
+		res.send("Chart submitted!");
+	}
+	else{
+		res.send("you don't have permission to submit charts.");
+	}
+});
+
+app.get('/addschart',function(req,res){
+	db.getlatestadds();
+	db.once('addschart',function(msg){
+		var json = JSON.parse(msg);
+		//console.log(json);
+		
+		var html = "<div id=\"content\" class=\"content\"><h2>Top 5 Adds This Week</h2><table id=\"table\" border=\"1\"><tr><th>#</th><th>Artist</th><th>Album</th><th>Label</th></tr>";
+		for(var i = 1; i <= 5; i++){
+			switch (i){
+				case 1:
+					var artist = json.artist1;
+					var album = json.album1;
+					var label = json.label1;
+					break;
+				case 2:
+					var artist = json.artist2;
+					var album = json.album2;
+					var label = json.label2;
+					break;
+				case 3:
+					var artist = json.artist3;
+					var album = json.album3;
+					var label = json.label3;
+					break;
+				case 4:
+					var artist = json.artist4;
+					var album = json.album4;
+					var label = json.label4;
+					break;
+				case 5:
+					var artist = json.artist5;
+					var album = json.album5;
+					var label = json.label5;
+					break;
+			}
+			if (artist == ""){
+				break;
+			}
+				html +="<tr><td>";
+				html += i;
+				html += "</td><td>";
+				html += artist;
+				html += "</td><td>";
+				html += album;
+				html += "</td><td>";
+				html += label;
+				html += "</td></tr>";
+		}
+		html += "</table></div>";
+		
+		res.send(html);
+	});
+})
+
+app.get('/top30chart',function(req,res){
+	db.getlatesttop30();
+	db.once('top30chart',function(msg){
+		var json = JSON.parse(msg);
+		//console.log(json);
+		
+		var html = "<h2>Top 30 Heavy Rotation This Week</h2><table id=\"table\" border=\"1\"><tr><th>#</th><th>Artist</th><th>Album</th><th>Label</th></tr>";
+		for(var i = 1; i <= 30; i++){
+			switch (i){
+				case 1:
+					var artist = json.artist1;
+					var album = json.album1;
+					var label = json.label1;
+					break;
+				case 2:
+					var artist = json.artist2;
+					var album = json.album2;
+					var label = json.label2;
+					break;
+				case 3:
+					var artist = json.artist3;
+					var album = json.album3;
+					var label = json.label3;
+					break;
+				case 4:
+					var artist = json.artist4;
+					var album = json.album4;
+					var label = json.label4;
+					break;
+				case 5:
+					var artist = json.artist5;
+					var album = json.album5;
+					var label = json.label5;
+					break;
+				case 6:
+					var artist = json.artist6;
+					var album = json.album6;
+					var label = json.label6;
+					break;
+				case 7:
+					var artist = json.artist7;
+					var album = json.album7;
+					var label = json.label7;
+					break;
+				case 8:
+					var artist = json.artist8;
+					var album = json.album8;
+					var label = json.label8;
+					break;
+				case 9:
+					var artist = json.artist9;
+					var album = json.album9;
+					var label = json.label9;
+					break;
+				case 10:
+					var artist = json.artist10;
+					var album = json.album10;
+					var label = json.label10;
+					break;
+				case 11:
+					var artist = json.artist11;
+					var album = json.album11;
+					var label = json.label11;
+					break;
+				case 12:
+					var artist = json.artist12;
+					var album = json.album12;
+					var label = json.label12;
+					break;
+				case 13:
+					var artist = json.artist13;
+					var album = json.album13;
+					var label = json.label13;
+					break;
+				case 14:
+					var artist = json.artist14;
+					var album = json.album14;
+					var label = json.label14;
+					break;
+				case 15:
+					var artist = json.artist15;
+					var album = json.album15;
+					var label = json.label15;
+					break;
+				case 16:
+					var artist = json.artist16;
+					var album = json.album16;
+					var label = json.label16;
+					break;
+				case 17:
+					var artist = json.artist17;
+					var album = json.album17;
+					var label = json.label17;
+					break;
+				case 18:
+					var artist = json.artist18;
+					var album = json.album18;
+					var label = json.label18;
+					break;
+				case 19:
+					var artist = json.artist19;
+					var album = json.album19;
+					var label = json.label19;
+					break;
+				case 20:
+					var artist = json.artist20;
+					var album = json.album20;
+					var label = json.label20;
+					break;
+								case 21:
+					var artist = json.artist21;
+					var album = json.album21;
+					var label = json.label21;
+					break;
+				case 22:
+					var artist = json.artist22;
+					var album = json.album22;
+					var label = json.label22;
+					break;
+				case 23:
+					var artist = json.artist23;
+					var album = json.album23;
+					var label = json.label23;
+					break;
+				case 24:
+					var artist = json.artist24;
+					var album = json.album24;
+					var label = json.label24;
+					break;
+				case 25:
+					var artist = json.artist25;
+					var album = json.album25;
+					var label = json.label25;
+					break;
+				case 26:
+					var artist = json.artist26;
+					var album = json.album26;
+					var label = json.label26;
+					break;
+				case 27:
+					var artist = json.artist27;
+					var album = json.album27;
+					var label = json.label27;
+					break;
+				case 28:
+					var artist = json.artist28;
+					var album = json.album28;
+					var label = json.label28;
+					break;
+				case 29:
+					var artist = json.artist29;
+					var album = json.album29;
+					var label = json.label29;
+					break;
+				case 30:
+					var artist = json.artist30;
+					var album = json.album30;
+					var label = json.label30;
+					break;
+			}
+				if (artist == ""){
+					break;
+				}
+				html +="<tr><td>";
+				html += i;
+				html += "</td><td>";
+				html += artist;
+				html += "</td><td>";
+				html += album;
+				html += "</td><td>";
+				html += label;
+				html += "</td></tr>";
+		}
+		html += "</table>";
+		
+		res.send(html);
+	});
+})
+
+app.post('/submitplaylist',function(req,res){
+	console.log(req.body);
+	
+	if(req.session.usertype == 'admin' || req.session.usertype == 'superadmin' || req.session.usertype == 'member'){
+		db.submitplaylist(req.body, req.session.userid);
+		res.send("Playlist submitted!");
+	}
+	else{
+		res.send("you don't have permission to submit charts.");
+	}
+});
+
+app.get('/getplaylists',function(req,res){
+	db.getplaylists();
+	
+	db.once('playlist',function(msg){
+		res.send(msg);
+	});
+});
+
+app.get('/getdjplaylists',function(req,res){
+
+});
+
+app.get('/getplaylist',function(req,res){
+	res.send("yo");
 });
 
 app.listen(8080);
