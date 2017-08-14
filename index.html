@@ -703,11 +703,63 @@
 				success: function(msg){
 					var html = $.parseHTML(msg);
 					$("#content").replaceWith(html);
+					document.getElementById("viewdjplaylist").addEventListener("click",viewdjplaylist);
+					
 				},
 				
 				error: function(xhr, ajaxOptions, thrownError){
 					alert(thrownError);
-					document.getElementById("login").innerHTML = "login request failed"
+					document.getElementById("content").innerHTML = "playlist request failed"
+				}
+			});
+	}
+ 
+	function viewdjplaylist(){
+			var url = "http://localhost:8080/getdjplaylists";
+			var username = document.getElementById("djname").value;
+			url += "?username=" + username;
+				
+			$.ajax({
+				type: "GET",
+				url: url,
+				contentType: "application/json; charset=utf-8",
+				data: {},
+				dataType: "html",
+				
+				//fill div with response on success
+				success: function(msg){
+					var html = $.parseHTML(msg);
+					$("#content").replaceWith(html);
+					
+				},
+				
+				error: function(xhr, ajaxOptions, thrownError){
+					alert(thrownError);
+					document.getElementById("content").innerHTML = "playlist request failed"
+				}
+			});
+	}
+ 
+	function myplaylists(){
+			var url = "http://localhost:8080/myplaylists";
+				
+			$.ajax({
+				type: "GET",
+				url: url,
+				contentType: "application/json; charset=utf-8",
+				data: {},
+				dataType: "html",
+				
+				//fill div with response on success
+				success: function(msg){
+					var html = $.parseHTML(msg);
+					$("#content").replaceWith(html);
+					
+				},
+				
+				error: function(xhr, ajaxOptions, thrownError){
+					alert(thrownError);
+					document.getElementById("content").innerHTML = "playlist request failed"
 				}
 			});
 	}
@@ -737,31 +789,7 @@
 
 
 <div id="content" class="content">
-	<h2>Top 5 Adds This Week</h2>
-	<div id="top5">
-		<ol>
-			<li>Ty Segall- "Ty Segall"(2017)</li>
-			<li>Devendra Banhart- "An Ape in Pink Marble"</li>
-			<li>The Spirit of the Beehive- "Pleasure Suck"</li>
-			<li>Mount Eerie- "A Crow Looked at Me"</li>
-			<li>Sampha- "Process"</li>
-		</ol>
-	</div>
 
-	<br><br>
-
-	<h2>Top 30 Heavy Rotation This Week</h2>
-	<div id="top30">
-		<ol>
-			<li>This</li>
-			<li>is</li>
-			<li>a</li>
-			<li>temporary</li>
-			<li>placeholder</li>
-		</ol>
-	</div>
 </div>
-
-
 </body>
 </html>

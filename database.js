@@ -204,7 +204,7 @@ database.prototype.adds=function(sql){
 
 database.prototype.pending=function(userid){
 	var self = this;
-	var query = "select albumName, artistName, label, fileAddress, albumID from catalog where not exists(select null from votes where catalog.albumID=votes.albumID and votes.username='"+userid+"') and mediaType='Digital' and submissionStatus='Pending' and dateSubmitted > DATE_SUB(curdate(), INTERVAL 2 WEEK);";
+	var query = "select albumName, artistName, label, fileAddress, albumID from catalog where not exists(select null from votes, catalog where catalog.albumID=votes.albumID and votes.username='"+userid+"') and mediaType='Digital' and submissionStatus='Pending' and dateSubmitted > DATE_SUB(curdate(), INTERVAL 2 WEEK);";
 	//console.log(query);
 	con.query(query,function(err, rows, fields){
 		if(err){
@@ -408,25 +408,67 @@ database.prototype.getlatesttop30=function(){
 
 database.prototype.getplaylists=function(){
 	var self = this;
-	var html = "<div id=\"content\" class=\"content\"><h3>Playlists</h3><hr>";
-	var query = "select * from playlists order by date desc limit 20;"
+	var html = "<div id=\"content\" class=\"content\"><h3>Playlists</h3><hr><input type=\"text\" id=\"djname\" placeholder=\"Search by username\" value=\"\"><input type=\"submit\" id=\"viewdjplaylist\" value=\"Search\"><br>";
+	//var query = "select * from playlists order by date desc limit 20;"
+	var query = "select DATE_FORMAT(playlists.date,\"%a %M %D\") as date, playlists.chartid, users.username from playlists, users where playlists.creatorid=users.userid order by playlists.date desc limit 20;"
 	con.query(query, function(err,rows,fields){
 		if(err){
 			console.log(err);
 		}
 		else{
 			for (var i in rows){
-				html+="<a href=\"getplaylist?id="
+				html+="<a target=\"_blank\" href=\"getplaylist?id="
 				html+=rows[i].chartid;
 				html+="\">";
-				html+= getusername(rows[i].creatorid);
+				html+= rows[i].username;
 				html+= " on "
 				html+= rows[i].date;
 				html+="</a><br>";
 			}
-			html += "<a href=\"#\" id=\"viewdjplaylist\">Search playlists by DJ</a></div>"
+			html += "</div>"
 			
-			self.emit('playlist',html);
+			self.emit('playlists',html);
+		}
+	});
+}
+
+database.prototype.getplaylist=function(id){
+	var self = this;
+	var query = "select DATE_FORMAT(playlists.date,\"%a %M %D\") as date, playlists.playlist, users.username from playlists, users where playlists.creatorid=users.userid and playlists.chartid="+id+";";
+	
+	con.query(query, function(err,rows,fields){
+		if(err){
+			console.log(err);
+		}
+		else{
+			self.emit('playlist',rows[0]);
+		}
+	});
+
+
+}
+
+database.prototype.getdjplaylists=function(username){
+	var self = this;
+	var html = "<div id=\"content\" class=\"content\"><h3>Playlists</h3><hr>";
+	var query = "select DATE_FORMAT(playlists.date,\"%a %M %D\") as date, playlists.chartid, users.username from playlists, users where playlists.creatorid=users.userid and users.username='"+username+"' order by playlists.date desc;"
+	con.query(query, function(err,rows,fields){
+		if(err){
+			console.log(err);
+		}
+		else{
+			for (var i in rows){
+				html+="<a target=\"_blank\" href=\"getplaylist?id="
+				html+=rows[i].chartid;
+				html+="\">";
+				html+= rows[i].username;
+				html+= " on "
+				html+= rows[i].date;
+				html+="</a><br>";
+			}
+			html += "</div>"
+			
+			self.emit('djplaylists',html);
 		}
 	});
 }
@@ -437,19 +479,6 @@ function adduser(first,last,email,username,password){
 	con.query(query);
 };
 
-function getusername(userid){
-	var query = "select username from users where userid=";
-	query += userid;
-	query += ";";
-	con.query(query,function(err,rows,fields){
-		if(err){
-			console.log(err);
-			return err;
-		}
-		else{
-			return rows[0].username;
-		}
-	});
-}
+
 
 module.exports = database;

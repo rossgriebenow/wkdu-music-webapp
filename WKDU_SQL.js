@@ -76,17 +76,17 @@ app.post('/login', function (req, res){
 			req.session.userid = req.body.username;
 			//req.session.usertype = db.getpermission(req.body.username)
 			db.getpermission(req.body.username);
+			
+			db.once('permission',function(msg){
+				req.session.usertype = msg;
+				console.log(req.session.usertype);
+				return res.redirect('/');
+			});
 		}
 		else{
 			console.log("login failed");
 			return res.redirect('/');
 		}
-	});
-	
-	db.once('permission',function(msg){
-		req.session.usertype = msg;
-		console.log(req.session.usertype);
-		return res.redirect('/');
 	});
 	
 	db.login(req.body.username, req.body.password);
@@ -347,12 +347,12 @@ app.get('/submitter', function(req,res){
 			res.send(html);
 		}
 		else{
-		var html = "you don't have permission to submit to the catalog.";
+		var html = "Your account must be white listed before you can submit to the catalog.";
 		res.send(html);
 		}
 	}
 	else{
-		var html = "you don't have permission to submit to the catalog.";
+		var html = "Log in or <a href=\"#\" onclick=\"register()\">request an account<\a> to submit music to WKDU";
 		res.send(html);
 	}
 });
@@ -892,17 +892,54 @@ app.post('/submitplaylist',function(req,res){
 app.get('/getplaylists',function(req,res){
 	db.getplaylists();
 	
-	db.once('playlist',function(msg){
+	db.once('playlists',function(msg){
 		res.send(msg);
 	});
 });
 
 app.get('/getdjplaylists',function(req,res){
+	db.getdjplaylists(req.query.username);
+	
+	db.once('djplaylists',function(msg){
+		res.send(msg);
+	});
+});
 
+app.get('/myplaylists',function(req,res){
+	db.getdjplaylists(req.session.userid);
+	
+	db.once('djplaylists',function(msg){
+		res.send(msg);
+	});
 });
 
 app.get('/getplaylist',function(req,res){
-	res.send("yo");
+	db.getplaylist(req.query.id);
+	
+	db.once('playlist',function(msg){
+		var json = JSON.parse(msg.playlist);
+		var html = "<head><link rel = \"stylesheet\" type = \"text/css\" href = \"style.css\" /></head><body><h3>"+msg.username+"'s playlist on "+msg.date+"</h3><hr><table border=\"1\"><tr><th>Artist</th><th>Title</th><th>Album</th><th>New</th><th>Local</th></tr>";
+		
+		for (var i in json.artists){
+			html+= "<tr><td>"+json.artists[i]+"</td><td>"+json.songs[i]+"</td><td>"+json.albums[i]+"</td><td>";
+			
+			if(json.new[i] == 'true'){
+				html += "&#10004;</td><td>";
+			}
+			else{
+				html += " </td><td>";
+			}
+			if(json.local[i] == 'true'){
+				html += "&#10004;</td></tr>";
+			}
+			else{
+				html += " </td></tr>";
+			}
+			
+		}
+		html += "</table></body>";
+		res.send(html);
+	});
 });
 
 app.listen(8080);
