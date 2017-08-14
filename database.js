@@ -204,7 +204,7 @@ database.prototype.adds=function(sql){
 
 database.prototype.pending=function(userid){
 	var self = this;
-	var query = "select albumName, artistName, label, fileAddress, albumID from catalog where not exists(select null from votes, catalog where catalog.albumID=votes.albumID and votes.username='"+userid+"') and mediaType='Digital' and submissionStatus='Pending' and dateSubmitted > DATE_SUB(curdate(), INTERVAL 2 WEEK);";
+	var query = "select albumName, artistName, label, fileAddress, albumID from catalog where not exists(select null from votes where catalog.albumID=votes.albumID and votes.username='"+userid+"') and mediaType='Digital' and submissionStatus='Pending' and dateSubmitted > DATE_SUB(curdate(), INTERVAL 2 WEEK);";
 	//console.log(query);
 	con.query(query,function(err, rows, fields){
 		if(err){
@@ -361,8 +361,8 @@ database.prototype.submittop5=function(json, user){
 database.prototype.submitplaylist=function(json, user){
 	var json_ = JSON.stringify(json);
 	
-	for(var i in artists){
-		var query = "update catalog set spinsAllTIme = spinsAllTime + 1, spinsWeek = spinsWeek + 1 where artistName='"+json.artists[i]+"' AND albumName = '"+json.albums[i]+"';";
+	for(var i in json_.artists){
+		var query = "update catalog set spinsAllTIme = spinsAllTime + 1, spinsWeek = spinsWeek + 1 where artistName='"+json_.artists[i]+"' AND albumName = '"+json_.albums[i]+"';";
 		con.query(query);
 	}
 	

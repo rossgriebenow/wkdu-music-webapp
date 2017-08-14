@@ -184,14 +184,21 @@ app.post('/upload', function (req, res){
 				fs.unlinkSync(path);
 				res.send("only mp3 files can be uploaded.");
 			}
-			
-			var mdata = id3.read(path);
+			try{
+				var mdata = id3.read(path);
 
-			var artist = mdata.artist;
-			var song = mdata.title;
-			var album = mdata.album;
-			var label = mdata.publisher;
-			var newpath;
+				var artist = mdata.artist;
+				var song = mdata.title;
+				var album = mdata.album;
+				var label = mdata.publisher;
+				var newpath;
+			}
+			catch(err){
+					var parser = mm(fs.createReadStream(path), function (err, metadata) {
+					if (err) console.error(err);
+						console.log(metadata);
+					});
+			}
 			
 			if(artist.length > 40){
 				artist = artist.slice(0,40);
@@ -547,7 +554,7 @@ app.get('/vote', function(req,res){
 
 app.get('/makeplaylist', function(req, res){
 	if(req.session.usertype == 'member' || req.session.usertype == 'admin' || req.session.usertype == 'superadmin'){
-		var html = "<div id=\"content\" class=\"content\"><form><h3>Add a Playlist</h3><hr><div id=\"p\"><p class=\"line\"><input type=\"text\" class=\"artist\" value=\"\" placeholder=\"Artist\" list=\"artistsuggest0\" oninput=\"suggestartist(this)\"><input type=\"text\" class=\"song\" value=\"\" placeholder=\"Title\"><input type=\"text\" class=\"album\" value=\"\" placeholder=\"Album\" list=\"albumsuggest0\" oninput=\"suggestalbum(this)\"><input type=\"text\" class=\"label\" value=\"\" placeholder=\"Label\"> New:<input type=\"checkbox\" class=\"new\" value=\"New\" name=\"New\"> Local:<input type=\"checkbox\" class=\"local\" value=\"Local\" name=\"Local\"><button onclick=\"deleteRow(this)\">Delete row</button><datalist class=\"artistsuggest\" id=\"artistsuggest0\"></datalist><datalist class=\"albumsuggest\" id=\"albumsuggest0\"><option value=\"yo\"></datalist></p></div><br></br><button onclick=\"addRow()\">Add row</button><br></br><button onclick=\"submitplaylist()\">Submit</button><div id=\"out\"></div></form></div>"
+		var html = "<div id=\"content\" class=\"content\"><form><h3>Add a Playlist</h3><hr><div id=\"playlist\"><p class=\"line\"><input type=\"text\" class=\"artist\" value=\"\" placeholder=\"Artist\" list=\"artistsuggest0\" oninput=\"suggestartist(this)\"><input type=\"text\" class=\"song\" value=\"\" placeholder=\"Title\"><input type=\"text\" class=\"album\" value=\"\" placeholder=\"Album\" list=\"albumsuggest0\" oninput=\"suggestalbum(this)\"><input type=\"text\" class=\"label\" value=\"\" placeholder=\"Label\"> New:<input type=\"checkbox\" class=\"new\" value=\"New\" name=\"New\"> Local:<input type=\"checkbox\" class=\"local\" value=\"Local\" name=\"Local\"><button onclick=\"deleteRow(this)\">Delete row</button><datalist class=\"artistsuggest\" id=\"artistsuggest0\"></datalist><datalist class=\"albumsuggest\" id=\"albumsuggest0\"><option value=\"yo\"></datalist></p></div><br></br><button type=\"button\" onclick=\"addRow()\">Add row</button><br></br><button onclick=\"submitplaylist()\">Submit</button><div id=\"out\"></div></form></div>"
 		res.send(html);
 	}
 	else{

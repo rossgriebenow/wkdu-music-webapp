@@ -408,11 +408,14 @@
 	
 		// add a row to playlist form
 	function addRow() {
-		var pt = document.getElementById("p");
+		var pt = document.getElementById("playlist");
 		var index = document.getElementsByClassName("line").length;
 		var str = "<p class=\"line\"><input type=\"text\" class=\"artist\" value=\"\" placeholder=\"Artist\" list=\"artistsuggest"+index+"\" oninput=\"suggestartist(this)\"><input type=\"text\" class=\"song\" value=\"\" placeholder=\"Title\"><input type=\"text\" class=\"album\" value=\"\" placeholder=\"Album\" list=\"albumsuggest"+index+"\" oninput=\"suggestalbum(this)\"><input type=\"text\" class=\"label\" value=\"\" placeholder=\"Label\"> New:<input type=\"checkbox\" class=\"new\" value=\"New\" name=\"New\"> Local:<input type=\"checkbox\" class=\"local\" value=\"Local\" name=\"Local\"><button onclick=\"deleteRow(this)\">Delete row</button><datalist class=\"artistsuggest\" id=\"artistsuggest"+index+"\"></datalist><datalist class=\"albumsuggest\"id=\"albumsuggest"+index+"\"></datalist></p>"
 		var html = $.parseHTML(str);
-		$("#p").append(html);
+		//alert("about to add row")
+		$("#playlist").append(html);
+		//alert("added row")
+		return false;
 	}
 
 	// delete a row from playlist form
