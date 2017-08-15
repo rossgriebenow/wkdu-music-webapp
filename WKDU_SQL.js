@@ -7,6 +7,7 @@ var bb = require('express-busboy');
 var fs = require('fs');
 var id3 = require('node-id3');
 var path = require('path');
+var mm = require('music-metadata');
 
 var app = new express();
 var db = new database();
@@ -137,14 +138,13 @@ function arrayupload(json){
 			var path = json[i].file;
 			var type = json[i].mimetype;
 			var mdata = id3.read(path);
-			console.log(mdata);
 				
 			var artist = mdata.artist;
-			var song = mdata.title;
+			var title = mdata.title;
 			var album = mdata.album;
 			var label = mdata.publisher;
 			var newpath;
-			
+						
 			if(artist.length > 40){
 				artist = artist.slice(0,40);
 			}
@@ -154,12 +154,12 @@ function arrayupload(json){
 			
 			artist = artist.replace(/[&\/\\#,^+()~%.'":*<>{}\[\]]/g, '');
 			album = album.replace(/[&\/\\#,^+()~%.'":*<>{}\[\]]/g, '');
-			song = song.replace(/[&\/\\#,^+()~%.'":*<>{}\[\]]/g, '');
+			title = title.replace(/[&\/\\#,^+()~%.'":*<>{}\[\]]/g, '');
 			
-			if(i==0){
-				newpath = "./files/"+artist + "-"+album+"/"+artist+"-"+song+".mp3";
-			}
-			
+			//if(i==0){
+				newpath = "./files/"+artist + "-"+album+"/"+artist+"-"+title+".mp3";
+			//}
+			console.log(newpath);
 			fs.renameSync(path, newpath);
 			
 			var filepath = path.substring(0,path.lastIndexOf("\\"));
@@ -177,10 +177,10 @@ app.post('/upload', function (req, res){
 			var path = req.files.file[0].file;
 			var type = req.files.file[0].mimetype;
 			
-			console.log(path);
-			console.log(type);
+			//console.log(path);
+			//console.log(type);
 			
-			if(type != "audio/mp3"){
+			if(type != "audio/mp3" && type != "audio/mpeg"){
 				fs.unlinkSync(path);
 				res.send("only mp3 files can be uploaded.");
 			}
@@ -194,10 +194,11 @@ app.post('/upload', function (req, res){
 				var newpath;
 			}
 			catch(err){
-					var parser = mm(fs.createReadStream(path), function (err, metadata) {
+					console.error(err);
+					/*var parser = mm(fs.createReadStream(path), function (err, metadata) {
 					if (err) console.error(err);
 						console.log(metadata);
-					});
+					});*/
 			}
 			
 			if(artist.length > 40){
@@ -252,7 +253,7 @@ app.post('/upload', function (req, res){
 		console.log(path);
 		console.log(type);
 		
-		if(type != "audio/mp3"){
+		if(type != "audio/mp3" && type != "audio/mpeg"){
 			fs.unlinkSync(path);
 			var filepath = path.substring(0,path.lastIndexOf("\\"));
 			fs.rmdirSync(filepath);
