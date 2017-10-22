@@ -7,10 +7,13 @@ var bb = require('express-busboy');
 var fs = require('fs');
 var id3 = require('node-id3');
 var path = require('path');
-var mm = require('music-metadata');
+var events = require('events')
+//var files = require('./files')
+
 
 var app = new express();
 var db = new database();
+//var upload = new files();
 
 app.use(express.static('.'));
 app.use(session({
@@ -29,22 +32,33 @@ bb.extend(app, {
 });
 
 app.get("/add", function(req,res){
-	var sql = "insert into catalog (albumName,artistName,label,submittedBy,submissionStatus,dateSubmitted,mediaType) values (";
-	
-	//add values
-	sql = sql + "'" + req.query.album + "', '" + req.query.artist + "', '" + req.query.label + "', '" + req.session.userid +  "', 'Pending', '" + req.query.submitDate + "', '" + req.query.mediaType + "');";
-	if(req.session.userid){		
-		if(req.session.usertype != 'pending'){
-			db.add(sql);
-			res.send("album successfully submitted");
+	var sql = "select count(*) from catalog where artistName="+mysql.escape(artist)+" && albumName = "+mysql.escape(album)+";";
+	db.isincatalog(sql);
+	var isincatalog;
+	db.once('isincatalog',function(msg){
+		isincatalog = msg;
+		console.log("isintcatalog: "+isincatalog);
+		if(isincatalog == false){
+			sql = "insert into catalog (albumName,artistName,label,submittedBy,submissionStatus,dateSubmitted,mediaType) values (";
+			//add values
+			sql = sql + "'" + req.query.album + "', '" + req.query.artist + "', '" + req.query.label + "', '" + req.session.userid +  "', 'Pending', '" + req.query.submitDate + "', '" + req.query.mediaType + "');";
+			if(req.session.userid){		
+				if(req.session.usertype != 'pending'){
+					db.add(sql);
+					res.send("album successfully submitted");
+				}
+				else{
+					res.send("you don't have permission to submit albums");
+				}
+			}
+			else{
+				res.send("you don't have permission to submit albums");
+			}
 		}
 		else{
-			res.send("you don't have permission to submit albums");
+			res.send("Submission is already in catalog");
 		}
-	}
-	else{
-		res.send("you don't have permission to submit albums");
-	}
+	});
 });
 
 app.get('/loadindex', function (req, res){
@@ -169,7 +183,7 @@ function arrayupload(json){
 	}
 }
 
-app.post('/upload', function (req, res){
+app.post('/oldupload', function (req, res){
 	var valid = true;
 	
 	if(req.files.file instanceof Array){
@@ -193,8 +207,9 @@ app.post('/upload', function (req, res){
 				var label = mdata.publisher;
 				var newpath;
 			}
-			catch(err){
-					console.error(err);
+			catch(e){
+					console.error(e);
+					res.send("unable to parse file metadata.")
 					/*var parser = mm(fs.createReadStream(path), function (err, metadata) {
 					if (err) console.error(err);
 						console.log(metadata);
@@ -320,6 +335,117 @@ app.post('/upload', function (req, res){
 	}
 });
 
+app.post('/upload',function(req,res){
+	console.log(req.files);
+	console.log(req.body);
+	
+	var artist = req.body.artist;
+	var album = req.body.album;
+	var label = req.body.label;
+	
+	if(!req.session.userid){
+		res.send("You must be logged in to submit.");
+	}
+	else if(req.session.usertype == 'pending'){
+		res.send("You must be whitelisted before you can submit to the catalog.");
+	}
+	
+	db.isincatalog("select count(*) from catalog where artistName="+mysql.escape(artist)+" && albumName = "+mysql.escape(album)+";");
+	db.once('isincatalog',function(msg){
+		if(msg == true){
+			res.send("Submission is already in catalog. Please contact us if you think this is an error.");
+		}
+		else if(Object.keys(req.files).length === 0){
+			res.send("Please attach mp3 files if making a digital submission.");
+		}
+		else if(req.files.file.mimetype != "audio/mp3" && req.files.file.mimetype != "audio/mpeg" && req.files.file[0].mimetype != "audio/mp3" && req.files.file[0].mimetype != "audio/mpeg"){
+			res.send("Files must be mp3's.")
+		}
+		else{
+			if(req.files.file instanceof Array){
+				var path = req.files.file[0].file;
+				path = path.substring(0,path.lastIndexOf("\\"));
+				for(var i=1; i < req.files.file.length; i++){
+					var file = req.files.file[i].file;
+					var temppath = file.substring(0,file.lastIndexOf("\\"));
+					var newpath = path+file.substring(file.lastIndexOf("\\"),file.length);
+					fs.renameSync(file,newpath);
+					fs.rmdirSync(temppath);
+					temppath = temppath.substring(0,temppath.lastIndexOf("\\"));
+					fs.rmdirSync(temppath);
+				}
+				
+			}
+			else{
+				var path = req.files.file.file;
+				path = path.substring(0,path.lastIndexOf("\\"));
+			}
+			
+			console.log(path.replace("\\","FUCK"));
+			path = path.substring(path.lastIndexOf("files"),path.length);
+			path = path.replace(/\\/g,"/");
+			path = ".\/"+path;
+			console.log(path);
+			
+			sql = "insert into catalog (albumName,artistName,label,submittedBy,submissionStatus,dateSubmitted,mediaType, fileAddress) values (";
+			sql += mysql.escape(album)+", "+mysql.escape(artist)+", "+mysql.escape(label)+", "+mysql.escape(req.session.userid)+", 'Pending', now(), 'Digital', '"+path+"');"	
+			db.add(sql);
+
+			res.send("Submission received. Thank you!");
+		}
+	});
+});
+
+/*app.post('/upload',function(req,res){
+	console.log(req);
+	var artist = req.body.artist;
+	var album = req.body.album;
+	var label = req.body.label;
+	
+	var sql = "select count(*) from catalog where artistName="+mysql.escape(artist)+" && albumName = "+mysql.escape(album)+";";
+	db.isincatalog(sql);
+	var isincatalog;
+	
+	var path;
+	if(req.body.file instanceof Array){
+		path = req.body.file[0];
+	}
+	else{
+		var path = req.body.file;
+	}
+	path = path.substring(0,path.lastIndexOf("\\"));
+	console.log(path);
+	
+	db.once('isincatalog',function(msg){
+		
+		isincatalog = msg;
+		console.log("isintcatalog: "+isincatalog);
+		if(isincatalog == false){
+			
+			sql = "insert into catalog (albumName,artistName,label,submittedBy,submissionStatus,dateSubmitted,fileAddress, mediaType) values (";
+			//add values
+			sql = sql + "'" + req.body.album + "', '" + req.body.artist + "', '" + req.body.label + "', '" + req.session.userid +  "', 'Pending', " + "curdate()" + ", '" +path+"', "+ "Digital" + "');";
+			
+			if(req.session.userid){		
+				if(req.session.usertype != 'pending'){
+					db.add(sql);
+					res.send("album successfully submitted");
+				}
+				else{
+					res.send("you don't have permission to submit to the catalog");
+				}
+			}
+			else{
+				res.send("you don't have permission to submit to the catalog");
+			}
+			
+		}
+		else{
+			res.send("Submission is already in catalog");
+		}
+	});
+});
+
 app.get('/catalog', function (req,res){
 	if(req.session.userid){
 		if(req.session.usertype == 'submitter'){
@@ -345,13 +471,13 @@ app.get('/catalog', function (req,res){
 		var html = "you don't have permission to view the catalog.";
 		res.send(html);
 	}
-});
+});*/
 
 app.get('/submitter', function(req,res){
 		if(req.session.userid){
 		if(req.session.usertype != 'pending'){
-			var html = "<h1>Add to catalog</h1><hr><p>Please provide all information below if mailing physical media:</p><form name=\"pendingSubmission\"><p>Album name: <input type=\"text\" name=\"album\" id=\"album\"></p><p>Artist: <input type=\"text\" name=\"artist\" id=\"artist\"></p><p>Record label: <input type=\"text\" name=\"label\" id=\"label\"></p><p>Media type:<select id=\"mediaType\"><option value=\"CD\">CD</option><option value=\"12in\">12in</option><option value=\"10in\">10in</option><option value=\"7in\">7in</option></select></p><p><button type=\"button\" onclick=\"addToCatalog()\">Submit!</button></p></form><p>Or upload mp3 file(s):</p><form name=\"fileUpload\" action=\"/upload\" method=\"post\" enctype=\"multipart/form-data\"><p><input name=\"file\" type=\"file\" id=\"file\" multiple></p><p><input type=\"submit\" value=\"Submit File\"></p></form>"
-			
+			var html = "<h1>Add to catalog</h1><hr><p>Please provide all information below for both physical and digital submissions:</p><form name=\"pendingSubmission\" id=\"subform\" action=\"/upload\"method=\"post\" target=\"\blank\" enctype=\"multipart/form-data\"><p>Album name:<input type=\"text\" name=\"album\" id=\"album\"></p><p>Artist: <input type=\"text\" name=\"artist\" id=\"artist\"></p><p>Record label: <input type=\"text\" name=\"label\" id=\"label\"></p><p>Media type:<select id=\"mediaType\"><option value=\"Digital\">Digital</option><option value=\"CD\">CD</option><option value=\"12in\">12in</option><option value=\"10in\">10in</option><option value=\"7in\">7in</option></select></p><p>Riyl (optional): <input type=\"text\" name=\"riyl\" id=\"riyl\"></p><textarea rows=\"4\" cols=\"50\" id=\"etc\">Description, comments, etc. (optional)</textarea><p>If submission is digital please upload entire submission in mp3 format (320 kbps preferred):</p><p><input name=\"file\" type=\"file\" id=\"file\" multiple></p><!--<p><input type=\"submit\" value=\"Submit MP3 Files\"></p>--><p><button type=\"button\" onclick=\"addToCatalog()\">Submit!</button></p></form>"
+
 			res.send(html);
 		}
 		else{
@@ -555,7 +681,7 @@ app.get('/vote', function(req,res){
 
 app.get('/makeplaylist', function(req, res){
 	if(req.session.usertype == 'member' || req.session.usertype == 'admin' || req.session.usertype == 'superadmin'){
-		var html = "<div id=\"content\" class=\"content\"><form><h3>Add a Playlist</h3><hr><div id=\"playlist\"><p class=\"line\"><input type=\"text\" class=\"artist\" value=\"\" placeholder=\"Artist\" list=\"artistsuggest0\" oninput=\"suggestartist(this)\"><input type=\"text\" class=\"song\" value=\"\" placeholder=\"Title\"><input type=\"text\" class=\"album\" value=\"\" placeholder=\"Album\" list=\"albumsuggest0\" oninput=\"suggestalbum(this)\"><input type=\"text\" class=\"label\" value=\"\" placeholder=\"Label\"> New:<input type=\"checkbox\" class=\"new\" value=\"New\" name=\"New\"> Local:<input type=\"checkbox\" class=\"local\" value=\"Local\" name=\"Local\"><button onclick=\"deleteRow(this)\">Delete row</button><datalist class=\"artistsuggest\" id=\"artistsuggest0\"></datalist><datalist class=\"albumsuggest\" id=\"albumsuggest0\"><option value=\"yo\"></datalist></p></div><br></br><button type=\"button\" onclick=\"addRow()\">Add row</button><br></br><button onclick=\"submitplaylist()\">Submit</button><div id=\"out\"></div></form></div>"
+		var html = "<div id=\"content\" class=\"content\"><form><h3>Add a Playlist</h3><hr><div id=\"playlist\"><p class=\"line\"><input type=\"text\" class=\"artist\" value=\"\" placeholder=\"Artist\" list=\"artistsuggest0\" oninput=\"suggestartist(this)\"><input type=\"text\" class=\"song\" value=\"\" placeholder=\"Title\"><input type=\"text\" class=\"album\" value=\"\" placeholder=\"Album\" list=\"albumsuggest0\" oninput=\"suggestalbum(this)\"><input type=\"text\" class=\"label\" value=\"\" placeholder=\"Label\"> New:<input type=\"checkbox\" class=\"new\" value=\"New\" name=\"New\"> Local:<input type=\"checkbox\" class=\"local\" value=\"Local\" name=\"Local\"><button onclick=\"deleteRow(this)\">Delete row</button><datalist class=\"artistsuggest\" id=\"artistsuggest0\"></datalist><datalist class=\"albumsuggest\" id=\"albumsuggest0\"><option value=\"yo\"></datalist></p><p class=\"line\"><input type=\"text\" class=\"artist\" value=\"\" placeholder=\"Artist\" list=\"artistsuggest1\" oninput=\"suggestartist(this)\"><input type=\"text\" class=\"song\" value=\"\" placeholder=\"Title\"><input type=\"text\" class=\"album\" value=\"\" placeholder=\"Album\" list=\"albumsuggest1\" oninput=\"suggestalbum(this)\"><input type=\"text\" class=\"label\" value=\"\" placeholder=\"Label\"> New:<input type=\"checkbox\" class=\"new\" value=\"New\" name=\"New\"> Local:<input type=\"checkbox\" class=\"local\" value=\"Local\" name=\"Local\"><button onclick=\"deleteRow(this)\">Delete row</button><datalist class=\"artistsuggest\" id=\"artistsuggest1\"></datalist><datalist class=\"albumsuggest\" id=\"albumsuggest1\"><option value=\"yo\"></datalist></p><p class=\"line\"><input type=\"text\" class=\"artist\" value=\"\" placeholder=\"Artist\" list=\"artistsuggest2\" oninput=\"suggestartist(this)\"><input type=\"text\" class=\"song\" value=\"\" placeholder=\"Title\"><input type=\"text\" class=\"album\" value=\"\" placeholder=\"Album\" list=\"albumsuggest2\" oninput=\"suggestalbum(this)\"><input type=\"text\" class=\"label\" value=\"\" placeholder=\"Label\"> New:<input type=\"checkbox\" class=\"new\" value=\"New\" name=\"New\"> Local:<input type=\"checkbox\" class=\"local\" value=\"Local\" name=\"Local\"><button onclick=\"deleteRow(this)\">Delete row</button><datalist class=\"artistsuggest\" id=\"artistsuggest2\"></datalist><datalist class=\"albumsuggest\" id=\"albumsuggest2\"><option value=\"yo\"></datalist></p><p class=\"line\"><input type=\"text\" class=\"artist\" value=\"\" placeholder=\"Artist\" list=\"artistsuggest3\" oninput=\"suggestartist(this)\"><input type=\"text\" class=\"song\" value=\"\" placeholder=\"Title\"><input type=\"text\" class=\"album\" value=\"\" placeholder=\"Album\" list=\"albumsuggest3\" oninput=\"suggestalbum(this)\"><input type=\"text\" class=\"label\" value=\"\" placeholder=\"Label\"> New:<input type=\"checkbox\" class=\"new\" value=\"New\" name=\"New\"> Local:<input type=\"checkbox\" class=\"local\" value=\"Local\" name=\"Local\"><button onclick=\"deleteRow(this)\">Delete row</button><datalist class=\"artistsuggest\" id=\"artistsuggest3\"></datalist><datalist class=\"albumsuggest\" id=\"albumsuggest3\"><option value=\"yo\"></datalist></p></div><br></br><button type=\"button\" onclick=\"addRow()\">Add row</button><br></br><button onclick=\"submitplaylist()\">Submit</button><div id=\"out\"></div></form></div>"
 		res.send(html);
 	}
 	else{
