@@ -473,6 +473,33 @@ app.get('/catalog', function (req,res){
 	}
 });*/
 
+app.get('/catalog', function (req,res){
+	if(req.session.userid){
+		if(req.session.usertype == 'submitter'){
+			var html = "<a href=\"#\" id=\"history\">View my past submissions</a><br><br>";
+			html += "<a href=\"#\" id=\"newadds\">View new adds for this week</a><br><br>";
+			
+			res.send(html);
+		}
+		else if(req.session.usertype == 'pending'){
+		var html = "you don't have permission to view the catalog.";
+		res.send(html);
+		}
+		else{
+			var html = "<a href=\"#\" id=\"history\">View my past submissions</a><br><br>";
+			html += "<a href=\"#\" id=\"newadds\">View new adds for this week</a><br><br>";
+			html += "<a href=\"#\" id=\"shelves\">View new music shelves</a><br><br>";
+			html += "<a href=\"#\" id=\"search\">Search entire catalog</a><br><br>";
+			
+			res.send(html);
+		}
+	}
+	else{
+		var html = "you don't have permission to view the catalog.";
+		res.send(html);
+	}
+});
+
 app.get('/submitter', function(req,res){
 		if(req.session.userid){
 		if(req.session.usertype != 'pending'){
