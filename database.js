@@ -6,7 +6,7 @@ var fs = require('fs');
 var con = mysql.createConnection({
 	host: 'localhost',
 	user: 'ross',
-	password: 'Lifehou$3',
+	password: 'password',
 	database: 'wkdudev1'
 });
 
@@ -379,7 +379,7 @@ database.prototype.submittop30=function(json, user){
 }
 
 database.prototype.getlatestadds=function(){
-	var query = "select playlist, MAX(date) AS current_chart from charts where type='adds';";
+	var query = "select playlist from charts where type='adds' order by date desc limit 1;";
 	var self = this;
 	con.query(query, function(err, rows, fields){
 		if(err){
@@ -393,7 +393,7 @@ database.prototype.getlatestadds=function(){
 }
 
 database.prototype.getlatesttop30=function(){
-	var query = "select playlist, MAX(date) AS current_chart from charts where type='top30';";
+	var query = "select playlist from charts where type='top30' order by date desc limit 1;";
 	var self = this;
 	con.query(query, function(err, rows, fields){
 		if(err){
