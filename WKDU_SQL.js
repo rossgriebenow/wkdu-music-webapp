@@ -8,12 +8,21 @@ var fs = require('fs');
 var id3 = require('node-id3');
 var path = require('path');
 var events = require('events')
-//var files = require('./files')
 
 
 var app = new express();
 var db = new database();
-//var upload = new files();
+
+app.use(function(req, res, next){
+	res.append('Access-Control-Allow-Origin','*');
+	//res.set("Access-Control-Allow-Methods","GET, POST, OPTIONS");
+	//res.set("Access-Control-Allow-Headers","Content-Type, Authorization, Content-Length, X-Requested-With");
+	if ("OPTIONS" == req.method){
+		res.send(200);
+	}
+	console.log("Set CORS Header");
+	next();
+});
 
 app.use(express.static('.'));
 app.use(session({
@@ -31,7 +40,7 @@ bb.extend(app, {
     //allowedPath: /./
 });
 
-app.get("/add", function(req,res){
+app.get("/add",  function(req,res){
 	var sql = "select count(*) from catalog where artistName="+mysql.escape(artist)+" && albumName = "+mysql.escape(album)+";";
 	db.isincatalog(sql);
 	var isincatalog;
@@ -61,7 +70,7 @@ app.get("/add", function(req,res){
 	});
 });
 
-app.get('/loadindex', function (req, res){
+app.get('/loadindex',  function (req, res){
 	if(!req.session.userid){
 		console.log("sending login form")
 		html = 	"<div class=\"login\" id=\"login\"><a href=\"#\" onclick=\"register()\">Create an Account<\a><form method=post action='/login' class='login'><input type=\"text\" name=\"username\" placeholder=\"username\" class=\"login\" value=\"\"><input type=\"password\" name=\"password\" placeholder=\"password\" class=\"login\" value=\"\"><input type=\"submit\" value=\"Login\" class=\"login\" onclick=\"getmsg()\"></div>"
@@ -74,7 +83,7 @@ app.get('/loadindex', function (req, res){
 	}
 });
 
-app.get('/logout',function(req,res){
+app.get('/logout',  function(req,res){
 	if(!req.session.userid){
 		res.redirect('/');
 	}
@@ -84,7 +93,7 @@ app.get('/logout',function(req,res){
 	}
 });
 
-app.post('/login', function (req, res){
+app.post('/login',  function (req, res){
 	db.once('loggedin', function(msg){
 		if(msg==1){
 			console.log("login successful");
@@ -107,7 +116,7 @@ app.post('/login', function (req, res){
 	db.login(req.body.username, req.body.password);
 });
 
-app.post('/register', function(req,res){
+app.post('/register',  function(req,res){
 	console.log(req.body);
 	
 	var first = req.body.first;
@@ -136,7 +145,7 @@ app.post('/register', function(req,res){
 
 });
 
-app.get('/getmsg', function (req, res){
+app.get('/getmsg',  function (req, res){
 	db.once('loggedin', function(msg){
 		if(msg==0){
 			res.send("incorrect username or password");
@@ -183,7 +192,7 @@ function arrayupload(json){
 	}
 }
 
-app.post('/oldupload', function (req, res){
+app.post('/oldupload',  function (req, res){
 	var valid = true;
 	
 	if(req.files.file instanceof Array){
@@ -335,7 +344,7 @@ app.post('/oldupload', function (req, res){
 	}
 });
 
-app.post('/upload',function(req,res){
+app.post('/upload',  function(req,res){
 	console.log(req.files);
 	console.log(req.body);
 	
@@ -473,7 +482,7 @@ app.get('/catalog', function (req,res){
 	}
 });*/
 
-app.get('/catalog', function (req,res){
+app.get('/catalog',  function (req,res){
 	if(req.session.userid){
 		if(req.session.usertype == 'submitter'){
 			var html = "<a href=\"#\" id=\"history\">View my past submissions</a><br><br>";
@@ -500,7 +509,7 @@ app.get('/catalog', function (req,res){
 	}
 });
 
-app.get('/submitter', function(req,res){
+app.get('/submitter',  function(req,res){
 		if(req.session.userid){
 		if(req.session.usertype != 'pending'){
 			var html = "<h1>Add to catalog</h1><hr><p>Please provide all information below for both physical and digital submissions:</p><form name=\"pendingSubmission\" id=\"subform\" action=\"/upload\"method=\"post\" target=\"\blank\" enctype=\"multipart/form-data\"><p>Album name:<input type=\"text\" name=\"album\" id=\"album\"></p><p>Artist: <input type=\"text\" name=\"artist\" id=\"artist\"></p><p>Record label: <input type=\"text\" name=\"label\" id=\"label\"></p><p>Media type:<select id=\"mediaType\"><option value=\"Digital\">Digital</option><option value=\"CD\">CD</option><option value=\"12in\">12in</option><option value=\"10in\">10in</option><option value=\"7in\">7in</option></select></p><p>Riyl (optional): <input type=\"text\" name=\"riyl\" id=\"riyl\"></p><textarea rows=\"4\" cols=\"50\" id=\"etc\">Description, comments, etc. (optional)</textarea><p>If submission is digital please upload entire submission in mp3 format (320 kbps preferred):</p><p><input name=\"file\" type=\"file\" id=\"file\" multiple></p><!--<p><input type=\"submit\" value=\"Submit MP3 Files\"></p>--><p><button type=\"button\" onclick=\"addToCatalog()\">Submit!</button></p></form>"
@@ -518,7 +527,7 @@ app.get('/submitter', function(req,res){
 	}
 });
 
-app.get('/history', function (req,res){
+app.get('/history',  function (req,res){
 	if(req.session.userid){
 		if(req.session.usertype != 'pending'){
 			var sql = "select albumName, artistName, label, spinsAllTime, spinsWeek, submissionStatus, dateSubmitted, mediaType from catalog where submittedBy='"+req.session.userid+"' order by dateSubmitted desc;";
@@ -539,7 +548,7 @@ app.get('/history', function (req,res){
 	}
 });
 
-app.get('/shelves', function(req,res){
+app.get('/shelves',  function(req,res){
 		if(req.session.userid){
 		if(req.session.usertype != 'pending'){
 			var date;
@@ -561,7 +570,7 @@ app.get('/shelves', function(req,res){
 	}
 });
 
-app.get('/userquery', function (req,res){
+app.get('/userquery',  function (req,res){
 	if(req.session.userid){
 		if(req.session.usertype != 'pending'){
 			var sql = "select albumName, artistName, label, spinsAllTime, spinsWeek, submissionStatus, dateSubmitted, mediaType from catalog where submittedBy='"+req.session.userid+"' order by dateSubmitted desc;";
@@ -582,7 +591,7 @@ app.get('/userquery', function (req,res){
 	}
 });
 
-app.get('/adds', function(req,res){
+app.get('/adds',  function(req,res){
 		if(req.session.userid){
 		if(req.session.usertype != 'pending'){
 			var date;
@@ -604,7 +613,7 @@ app.get('/adds', function(req,res){
 	}
 });
 
-app.get('/search', function(req,res){
+app.get('/search',  function(req,res){
 	if(req.session.userid){
 		if(req.session.usertype != 'pending' && req.session.usertype != 'submitter'){
 			var sql = "select albumName, artistName, label, dateAdded, mediaType, fileAddress from catalog where submissionStatus='Approved'";
@@ -652,7 +661,7 @@ app.get('/search', function(req,res){
 	}
 });
 
-app.get('/submissionbrowser', function(req,res){
+app.get('/submissionbrowser',  function(req,res){
 	console.log(req.session.usertype);
 	if(req.session.usertype == 'member' || req.session.usertype == 'admin' || req.session.usertype == 'superadmin'){
 		db.pending(req.session.userid);
@@ -666,7 +675,7 @@ app.get('/submissionbrowser', function(req,res){
 	}
 });
 
-app.get('/getfiles', function(req, res){
+app.get('/getfiles',   function(req, res){
 	if(req.session.usertype == 'member' || req.session.usertype == 'admin' || req.session.usertype == 'superadmin'){
 		var files = fs.readdirSync(req.query.address);
 		var html="";
@@ -681,7 +690,7 @@ app.get('/getfiles', function(req, res){
 	}
 });
 
-app.get('/download', function(req,res){
+app.get('/download',  function(req,res){
 	if(req.session.usertype == 'member' || req.session.usertype == 'admin' || req.session.usertype == 'superadmin'){
 		res.download(req.query.file);
 	}
@@ -690,7 +699,7 @@ app.get('/download', function(req,res){
 	}
 });
 
-app.get('/vote', function(req,res){
+app.get('/vote',  function(req,res){
 	console.log(req.query.album);
 	if(req.session.usertype == 'member' || req.session.usertype == 'admin' || req.session.usertype == 'superadmin'){
 		var query = "insert into votes(username, albumID, vote) (select '"+req.session.userid+"',"+req.query.album+",'"+req.query.vote+"' from votes where not exists (select * from votes where username ='"+req.session.userid+"' and albumID='"+req.query.album+"') limit 1 );";
@@ -1103,4 +1112,4 @@ app.get('/getplaylist',function(req,res){
 	});
 });
 
-app.listen(8080);
+app.listen(80);
